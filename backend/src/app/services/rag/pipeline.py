@@ -38,7 +38,6 @@ from app.services.config.rag_settings import rag_settings
 from app.services.rag.generation.history_summarizer import compress_history
 from app.services.rag.generation.llm_client import build_llm
 from app.services.rag.generation.prompt_templates import DIRECT_SYSTEM, RAG_PROMPT
-from app.services.rag.ingestion.qdrant_indexer import VectorIndexer
 from app.services.rag.retrieval.dense_retriever import build_dense_retriever
 from app.services.rag.retrieval.hybrid_fuser import build_hybrid_retriever
 from app.services.rag.retrieval.query_rewriter import rewrite_query
@@ -101,7 +100,9 @@ class RAGPipeline:
 
         lc_history = _to_lc_messages(history)
 
-        logger.info("RAG query | id=%s namespace=%s history_turns=%d", query_id, namespace, len(history))
+        logger.info(
+            "RAG query | id=%s namespace=%s history_turns=%d", query_id, namespace, len(history)
+        )
 
         # ── Step 1: Query rewriting (only when there is prior history) ────────
         if history:
@@ -128,9 +129,9 @@ class RAGPipeline:
         logger.info("RAG query id=%s → standalone: %s", query_id, standalone[:120])
 
         # ── Step 3: Retrieve ──────────────────────────────────────────────────
-        dense    = build_dense_retriever(self._qdrant, self._embeddings, namespace, doc_id)
-        sparse   = build_sparse_retriever(namespace)
-        hybrid   = build_hybrid_retriever(dense, sparse)
+        dense = build_dense_retriever(self._qdrant, self._embeddings, namespace, doc_id)
+        sparse = build_sparse_retriever(namespace)
+        hybrid = build_hybrid_retriever(dense, sparse)
         retriever = build_reranking_retriever(hybrid, top_n=rag_settings.RAG_RERANK_TOP_N)
 
         sources: list[Document] = await retriever.ainvoke(standalone)
@@ -146,7 +147,9 @@ class RAGPipeline:
         latency = int((time.monotonic() - start) * 1000)
         logger.info(
             "RAG complete | id=%s latency=%dms chunks=%d",
-            query_id, latency, len(sources),
+            query_id,
+            latency,
+            len(sources),
         )
 
         return RAGResult(
@@ -192,9 +195,9 @@ class RAGPipeline:
             return
 
         # Retrieve
-        dense    = build_dense_retriever(self._qdrant, self._embeddings, namespace, doc_id)
-        sparse   = build_sparse_retriever(namespace)
-        hybrid   = build_hybrid_retriever(dense, sparse)
+        dense = build_dense_retriever(self._qdrant, self._embeddings, namespace, doc_id)
+        sparse = build_sparse_retriever(namespace)
+        hybrid = build_hybrid_retriever(dense, sparse)
         retriever = build_reranking_retriever(hybrid, top_n=rag_settings.RAG_RERANK_TOP_N)
         sources: list[Document] = await retriever.ainvoke(standalone)
         sources.sort(key=lambda d: d.metadata.get("chunk_id", ""))
@@ -212,7 +215,12 @@ class RAGPipeline:
             for s in sources
         ]
 
-        yield {"type": "meta", "sources": source_dicts, "query_id": query_id, "chunks_retrieved": len(sources)}
+        yield {
+            "type": "meta",
+            "sources": source_dicts,
+            "query_id": query_id,
+            "chunks_retrieved": len(sources),
+        }
 
         # Format prompt and stream LLM tokens
         context_text = "\n\n".join(s.page_content for s in sources)

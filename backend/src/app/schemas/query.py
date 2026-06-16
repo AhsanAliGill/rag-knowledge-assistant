@@ -6,7 +6,7 @@ from sqlmodel import SQLModel
 
 class QueryRequest(SQLModel):
     question: str
-    conversation_id: Optional[uuid.UUID] = None   # pass to continue a thread
+    conversation_id: Optional[uuid.UUID] = None  # pass to continue a thread
 
 
 class SourceChunk(SQLModel):

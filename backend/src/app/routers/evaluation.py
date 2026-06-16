@@ -4,15 +4,13 @@ from typing import Optional
 from fastapi import APIRouter, BackgroundTasks, Depends, Query
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from app.controllers import evaluation_controller as ctrl
 from app.db.session import get_session
 from app.dependencies import get_current_active_user
 from app.models.user import User
-from app.controllers import evaluation_controller as ctrl
 from app.schemas.evaluation import (
     EvaluationListResponse,
-    EvaluationReport,
     EvaluationRequest,
-    EvaluationStatusResponse,
     EvaluationTriggerResponse,
 )
 

@@ -2,10 +2,10 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from app.controllers import query_controller as ctrl
 from app.db.session import get_session
 from app.dependencies import get_current_active_user
 from app.models.user import User
-from app.controllers import query_controller as ctrl
 from app.schemas.query import QueryRequest, QueryResponse
 
 router = APIRouter(prefix="/rag", tags=["RAG Query"])

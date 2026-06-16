@@ -62,6 +62,7 @@ class DocumentParser:
 
         logger.info(
             "Parsed %d pages | sha256=%s...",
-            page_count, sha256[:12],
+            page_count,
+            sha256[:12],
         )
         return elements, page_count, sha256

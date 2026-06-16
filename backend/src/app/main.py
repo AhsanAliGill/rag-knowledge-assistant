@@ -7,14 +7,14 @@ from sqlmodel import SQLModel
 from app.core.config import settings
 from app.db.session import engine
 from app.routers.auth import router as auth_router
-from app.services.config.logging_config import setup_logging
+from app.routers.conversations import router as rag_conversations_router
 from app.routers.documents import router as rag_documents_router
 from app.routers.evaluation import router as rag_evaluation_router
 from app.routers.query import router as rag_query_router
-from app.routers.conversations import router as rag_conversations_router
+from app.services.config.logging_config import setup_logging
 
 setup_logging()
- 
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -25,7 +25,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title=settings.APP_NAME, 
+    title=settings.APP_NAME,
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
@@ -49,4 +49,4 @@ app.include_router(rag_conversations_router, prefix="/api/v1")
 
 @app.get("/health", tags=["Health"])
 async def health_check():
-    return {"status": "ok"} 
+    return {"status": "ok"}

@@ -34,13 +34,13 @@ def _estimate_tokens(messages: list[dict]) -> int:
 
 
 async def _summarize(old_messages: list[dict], llm: BaseChatModel) -> str:
-    formatted = "\n".join(
-        f"{m['role'].upper()}: {m['content']}" for m in old_messages
+    formatted = "\n".join(f"{m['role'].upper()}: {m['content']}" for m in old_messages)
+    response = await llm.ainvoke(
+        [
+            SystemMessage(content=_SUMMARIZER_SYSTEM),
+            HumanMessage(content=f"Conversation to summarize:\n\n{formatted}"),
+        ]
     )
-    response = await llm.ainvoke([
-        SystemMessage(content=_SUMMARIZER_SYSTEM),
-        HumanMessage(content=f"Conversation to summarize:\n\n{formatted}"),
-    ])
     return response.content.strip()
 
 
@@ -67,7 +67,9 @@ async def compress_history(
 
     logger.info(
         "History compression: %d msgs → summary + %d recent (tokens ~%d)",
-        len(old), len(recent), _estimate_tokens(old),
+        len(old),
+        len(recent),
+        _estimate_tokens(old),
     )
 
     summary_text = await _summarize(old, llm)

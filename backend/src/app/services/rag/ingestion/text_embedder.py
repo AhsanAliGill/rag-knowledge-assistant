@@ -34,7 +34,9 @@ class EmbeddingEngine:
 
         logger.info(
             "Embedding %d texts in %d parallel batches (batch_size=%d)",
-            len(texts), total_batches, batch_size,
+            len(texts),
+            total_batches,
+            batch_size,
         )
 
         semaphore = asyncio.Semaphore(_EMBED_CONCURRENCY)

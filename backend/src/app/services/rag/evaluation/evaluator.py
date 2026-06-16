@@ -29,7 +29,12 @@ class EvaluationRunner:
 
             namespace = f"user_{evaluation.user_id}"
 
-            scores_sum = {"faithfulness": 0.0, "answer_relevancy": 0.0, "context_precision": 0.0, "context_recall": 0.0}
+            scores_sum = {
+                "faithfulness": 0.0,
+                "answer_relevancy": 0.0,
+                "context_precision": 0.0,
+                "context_recall": 0.0,
+            }
 
             for i, qa in enumerate(qa_pairs):
                 t0 = time.monotonic()
@@ -49,7 +54,8 @@ class EvaluationRunner:
                 )
 
                 source_found = any(
-                    qa.source_section and qa.source_section in (s.metadata.get("section_path") or "")
+                    qa.source_section
+                    and qa.source_section in (s.metadata.get("section_path") or "")
                     for s in result.sources
                 )
 

@@ -30,7 +30,7 @@ class RAGSettings:
     REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379")
 
     PARENT_CHUNK_SIZE: int = int(os.getenv("PARENT_CHUNK_SIZE", "2000"))
-    CHILD_CHUNK_SIZE: int = int(os.getenv("CHILD_CHUNK_SIZE", "500"))    # tokens
+    CHILD_CHUNK_SIZE: int = int(os.getenv("CHILD_CHUNK_SIZE", "500"))  # tokens
     CHILD_CHUNK_OVERLAP: int = int(os.getenv("CHILD_CHUNK_OVERLAP", "100"))  # tokens = 20%
     MAX_CHILD_TOKENS: int = int(os.getenv("MAX_CHILD_TOKENS", "512"))
 

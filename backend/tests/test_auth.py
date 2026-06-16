@@ -1,22 +1,22 @@
 import uuid
 
-import pytest
 from httpx import AsyncClient
 
 from app.core.security import create_access_token, get_password_hash, verify_password
 
 REGISTER_URL = "/api/v1/auth/register"
-LOGIN_URL    = "/api/v1/auth/login"
-ME_URL       = "/api/v1/auth/me"
+LOGIN_URL = "/api/v1/auth/login"
+ME_URL = "/api/v1/auth/me"
 
 TEST_USER = {
     "username": "testuser",
     "email": "test@example.com",
     "password": "TestPass123!",
 }
-     
+
 
 # ── Registration ──────────────────────────────────────────────────────────────
+
 
 async def test_register_success(client: AsyncClient):
     response = await client.post(REGISTER_URL, json=TEST_USER)
@@ -107,6 +107,7 @@ async def test_register_two_different_users(client: AsyncClient):
 
 # ── Login ─────────────────────────────────────────────────────────────────────
 
+
 async def test_login_success(client: AsyncClient, registered_user: dict):
     response = await client.post(
         LOGIN_URL,
@@ -177,10 +178,13 @@ async def test_login_missing_username_field(client: AsyncClient):
 
 async def test_login_returns_different_token_each_time(client: AsyncClient, registered_user: dict):
     """Each login produces a unique token (different iat/exp)."""
-    login = lambda: client.post(
-        LOGIN_URL,
-        data={"username": registered_user["email"], "password": registered_user["password"]},
-    )
+
+    def login():
+        return client.post(
+            LOGIN_URL,
+            data={"username": registered_user["email"], "password": registered_user["password"]},
+        )
+
     r1 = await login()
     r2 = await login()
 
@@ -188,6 +192,7 @@ async def test_login_returns_different_token_each_time(client: AsyncClient, regi
 
 
 # ── /me ───────────────────────────────────────────────────────────────────────
+
 
 async def test_me_success(client: AsyncClient, auth_token: str):
     response = await client.get(
@@ -256,6 +261,7 @@ async def test_me_token_with_nonexistent_user(client: AsyncClient):
 
 # ── Full Auth Flow ────────────────────────────────────────────────────────────
 
+
 async def test_full_register_login_me_flow(client: AsyncClient):
     """End-to-end: register → login → access /me."""
     reg = await client.post(REGISTER_URL, json=TEST_USER)
@@ -288,6 +294,7 @@ async def test_register_id_matches_login_user_id(client: AsyncClient):
 
 
 # ── Password Security ─────────────────────────────────────────────────────────
+
 
 def test_password_is_hashed():
     hashed = get_password_hash("MySecret123")

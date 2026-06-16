@@ -132,9 +132,7 @@ def session_factory(test_engine):
 def clean_db(test_engine):  # noqa: ARG001 — ensures schema+tables exist before first TRUNCATE
     """Fresh psycopg2 connection per test — avoids cloud DB idle-timeout killing a shared connection."""
     schema = _worker_schema()
-    table_names = ", ".join(
-        f'"{schema}"."{t.name}"' for t in SQLModel.metadata.sorted_tables
-    )
+    table_names = ", ".join(f'"{schema}"."{t.name}"' for t in SQLModel.metadata.sorted_tables)
     conn = psycopg2.connect(_sync_dsn())
     try:
         with conn.cursor() as cur:

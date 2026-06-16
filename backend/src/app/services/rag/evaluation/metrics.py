@@ -11,10 +11,7 @@ class MetricSet:
     @property
     def overall(self) -> float:
         return (
-            self.faithfulness
-            + self.answer_relevancy
-            + self.context_precision
-            + self.context_recall
+            self.faithfulness + self.answer_relevancy + self.context_precision + self.context_recall
         ) / 4
 
 

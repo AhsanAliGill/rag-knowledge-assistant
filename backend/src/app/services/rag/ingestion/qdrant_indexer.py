@@ -3,7 +3,15 @@ import logging
 import uuid
 
 from qdrant_client import AsyncQdrantClient
-from qdrant_client.models import Distance, FieldCondition, Filter, MatchValue, PayloadSchemaType, PointStruct, VectorParams
+from qdrant_client.models import (
+    Distance,
+    FieldCondition,
+    Filter,
+    MatchValue,
+    PayloadSchemaType,
+    PointStruct,
+    VectorParams,
+)
 
 from app.services.config.rag_settings import rag_settings
 
@@ -60,14 +68,16 @@ class VectorIndexer:
             # Store in langchain_qdrant-compatible format so QdrantVectorStore
             # returns full metadata (doc_id, page_num, etc.) on retrieval.
             text = payload.pop("text", "")
-            points.append(PointStruct(
-                id=_chunk_uuid(chunk_id),
-                vector=vector,
-                payload={
-                    "page_content": text,
-                    "metadata": payload,   # all remaining fields nested here
-                },
-            ))
+            points.append(
+                PointStruct(
+                    id=_chunk_uuid(chunk_id),
+                    vector=vector,
+                    payload={
+                        "page_content": text,
+                        "metadata": payload,  # all remaining fields nested here
+                    },
+                )
+            )
 
         batch_size = 50
         batches = [points[i : i + batch_size] for i in range(0, len(points), batch_size)]
@@ -81,7 +91,9 @@ class VectorIndexer:
                 )
 
         await asyncio.gather(*[_upsert_batch(b) for b in batches])
-        logger.info("Upserted %d vectors to Qdrant in %d parallel batches", len(points), len(batches))
+        logger.info(
+            "Upserted %d vectors to Qdrant in %d parallel batches", len(points), len(batches)
+        )
 
     async def delete_by_doc_id(self, doc_id: str) -> None:
         # Ensure indexes exist before filtering (idempotent, safe to call here).

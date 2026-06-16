@@ -54,6 +54,7 @@ def mock_storage():
 
 # ── Upload ────────────────────────────────────────────────────────────────────
 
+
 async def test_upload_success(client: AsyncClient, auth_token: str, mock_storage):
     r = await client.post(
         DOCS_URL,
@@ -97,7 +98,7 @@ async def test_upload_too_large_rejected(client: AsyncClient, auth_token: str):
     with patch.object(rag_settings, "MAX_UPLOAD_SIZE_BYTES", 10):
         r = await client.post(
             DOCS_URL,
-            files=_pdf(b"%PDF-1.4 overlimit"),   # 18 bytes > 10
+            files=_pdf(b"%PDF-1.4 overlimit"),  # 18 bytes > 10
             headers={"Authorization": f"Bearer {auth_token}"},
         )
     assert r.status_code == 413
@@ -115,13 +116,19 @@ async def test_upload_same_file_different_users_both_accepted(
     client: AsyncClient, auth_token: str, auth_token2: str, mock_storage
 ):
     """sha256 uniqueness is scoped per user — different users may upload the same bytes."""
-    r1 = await client.post(DOCS_URL, files=_pdf(), headers={"Authorization": f"Bearer {auth_token}"})
-    r2 = await client.post(DOCS_URL, files=_pdf(), headers={"Authorization": f"Bearer {auth_token2}"})
+    r1 = await client.post(
+        DOCS_URL, files=_pdf(), headers={"Authorization": f"Bearer {auth_token}"}
+    )
+    r2 = await client.post(
+        DOCS_URL, files=_pdf(), headers={"Authorization": f"Bearer {auth_token2}"}
+    )
     assert r1.status_code == 202
     assert r2.status_code == 202
 
 
-async def test_upload_with_corpus_name_and_description(client: AsyncClient, auth_token: str, mock_storage):
+async def test_upload_with_corpus_name_and_description(
+    client: AsyncClient, auth_token: str, mock_storage
+):
     r = await client.post(
         DOCS_URL,
         files=_pdf(),
@@ -137,6 +144,7 @@ async def test_upload_response_schema(client: AsyncClient, auth_token: str, mock
 
 
 # ── List ──────────────────────────────────────────────────────────────────────
+
 
 async def test_list_documents_empty(client: AsyncClient, auth_token: str):
     r = await client.get(DOCS_URL, headers={"Authorization": f"Bearer {auth_token}"})
@@ -185,7 +193,9 @@ async def test_list_documents_pagination(client: AsyncClient, auth_token: str, m
     assert len(data["documents"]) == 2
 
 
-async def test_list_documents_filter_by_valid_status(client: AsyncClient, auth_token: str, mock_storage):
+async def test_list_documents_filter_by_valid_status(
+    client: AsyncClient, auth_token: str, mock_storage
+):
     await client.post(DOCS_URL, files=_pdf(), headers={"Authorization": f"Bearer {auth_token}"})
 
     r = await client.get(
@@ -212,8 +222,11 @@ async def test_list_documents_no_auth(client: AsyncClient):
 
 # ── Get ───────────────────────────────────────────────────────────────────────
 
+
 async def test_get_document_success(client: AsyncClient, auth_token: str, mock_storage):
-    upload = await client.post(DOCS_URL, files=_pdf(), headers={"Authorization": f"Bearer {auth_token}"})
+    upload = await client.post(
+        DOCS_URL, files=_pdf(), headers={"Authorization": f"Bearer {auth_token}"}
+    )
     doc_id = upload.json()["doc_id"]
 
     r = await client.get(f"{DOCS_URL}/{doc_id}", headers={"Authorization": f"Bearer {auth_token}"})
@@ -237,7 +250,9 @@ async def test_get_document_not_found(client: AsyncClient, auth_token: str):
 async def test_get_document_wrong_user(
     client: AsyncClient, auth_token: str, auth_token2: str, mock_storage
 ):
-    upload = await client.post(DOCS_URL, files=_pdf(), headers={"Authorization": f"Bearer {auth_token}"})
+    upload = await client.post(
+        DOCS_URL, files=_pdf(), headers={"Authorization": f"Bearer {auth_token}"}
+    )
     doc_id = upload.json()["doc_id"]
 
     r = await client.get(f"{DOCS_URL}/{doc_id}", headers={"Authorization": f"Bearer {auth_token2}"})
@@ -251,16 +266,23 @@ async def test_get_document_no_auth(client: AsyncClient):
 
 # ── Delete ────────────────────────────────────────────────────────────────────
 
+
 async def test_delete_document_success(client: AsyncClient, auth_token: str, mock_storage):
-    upload = await client.post(DOCS_URL, files=_pdf(), headers={"Authorization": f"Bearer {auth_token}"})
+    upload = await client.post(
+        DOCS_URL, files=_pdf(), headers={"Authorization": f"Bearer {auth_token}"}
+    )
     doc_id = upload.json()["doc_id"]
 
-    r = await client.delete(f"{DOCS_URL}/{doc_id}", headers={"Authorization": f"Bearer {auth_token}"})
+    r = await client.delete(
+        f"{DOCS_URL}/{doc_id}", headers={"Authorization": f"Bearer {auth_token}"}
+    )
     assert r.status_code == 200
     assert r.json()["doc_id"] == doc_id
 
     # Confirm it's gone
-    get_r = await client.get(f"{DOCS_URL}/{doc_id}", headers={"Authorization": f"Bearer {auth_token}"})
+    get_r = await client.get(
+        f"{DOCS_URL}/{doc_id}", headers={"Authorization": f"Bearer {auth_token}"}
+    )
     assert get_r.status_code == 404
 
 
@@ -275,10 +297,14 @@ async def test_delete_document_not_found(client: AsyncClient, auth_token: str):
 async def test_delete_document_wrong_user(
     client: AsyncClient, auth_token: str, auth_token2: str, mock_storage
 ):
-    upload = await client.post(DOCS_URL, files=_pdf(), headers={"Authorization": f"Bearer {auth_token}"})
+    upload = await client.post(
+        DOCS_URL, files=_pdf(), headers={"Authorization": f"Bearer {auth_token}"}
+    )
     doc_id = upload.json()["doc_id"]
 
-    r = await client.delete(f"{DOCS_URL}/{doc_id}", headers={"Authorization": f"Bearer {auth_token2}"})
+    r = await client.delete(
+        f"{DOCS_URL}/{doc_id}", headers={"Authorization": f"Bearer {auth_token2}"}
+    )
     assert r.status_code == 403
 
     # Doc still accessible to original owner
@@ -293,7 +319,9 @@ async def test_delete_document_no_auth(client: AsyncClient):
 
 
 async def test_delete_removes_from_list(client: AsyncClient, auth_token: str, mock_storage):
-    upload = await client.post(DOCS_URL, files=_pdf(), headers={"Authorization": f"Bearer {auth_token}"})
+    upload = await client.post(
+        DOCS_URL, files=_pdf(), headers={"Authorization": f"Bearer {auth_token}"}
+    )
     doc_id = upload.json()["doc_id"]
 
     await client.delete(f"{DOCS_URL}/{doc_id}", headers={"Authorization": f"Bearer {auth_token}"})
@@ -304,8 +332,11 @@ async def test_delete_removes_from_list(client: AsyncClient, auth_token: str, mo
 
 # ── Job Status ────────────────────────────────────────────────────────────────
 
+
 async def test_get_job_status_success(client: AsyncClient, auth_token: str, mock_storage):
-    upload = await client.post(DOCS_URL, files=_pdf(), headers={"Authorization": f"Bearer {auth_token}"})
+    upload = await client.post(
+        DOCS_URL, files=_pdf(), headers={"Authorization": f"Bearer {auth_token}"}
+    )
     job_id = upload.json()["job_id"]
 
     r = await client.get(f"{JOBS_URL}/{job_id}", headers={"Authorization": f"Bearer {auth_token}"})
@@ -318,14 +349,18 @@ async def test_get_job_status_success(client: AsyncClient, auth_token: str, mock
 
 
 async def test_get_job_status_not_found(client: AsyncClient, auth_token: str):
-    r = await client.get(f"{JOBS_URL}/{uuid.uuid4()}", headers={"Authorization": f"Bearer {auth_token}"})
+    r = await client.get(
+        f"{JOBS_URL}/{uuid.uuid4()}", headers={"Authorization": f"Bearer {auth_token}"}
+    )
     assert r.status_code == 404
 
 
 async def test_get_job_status_wrong_user(
     client: AsyncClient, auth_token: str, auth_token2: str, mock_storage
 ):
-    upload = await client.post(DOCS_URL, files=_pdf(), headers={"Authorization": f"Bearer {auth_token}"})
+    upload = await client.post(
+        DOCS_URL, files=_pdf(), headers={"Authorization": f"Bearer {auth_token}"}
+    )
     job_id = upload.json()["job_id"]
 
     r = await client.get(f"{JOBS_URL}/{job_id}", headers={"Authorization": f"Bearer {auth_token2}"})

@@ -9,8 +9,8 @@ from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.models.conversation import RAGConversation, RAGConversationMessage
-from app.services.rag.pipeline import RAGPipeline
 from app.schemas.query import QueryMetadata, QueryRequest, QueryResponse, SourceChunk
+from app.services.rag.pipeline import RAGPipeline
 
 
 async def query(
@@ -21,7 +21,9 @@ async def query(
     if not request.question or not request.question.strip():
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Question must not be empty.")
     if len(request.question) > 1000:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Question must be under 1000 characters.")
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY, "Question must be under 1000 characters."
+        )
 
     # ── Conversation: load or create ─────────────────────────────────────────
     conversation = await _get_or_create_conversation(
@@ -55,18 +57,22 @@ async def query(
 
     # ── Persist user message + assistant reply ────────────────────────────────
     now = datetime.utcnow()
-    session.add(RAGConversationMessage(
-        conversation_id=conversation.id,
-        role="user",
-        content=request.question,
-        created_at=now,
-    ))
-    session.add(RAGConversationMessage(
-        conversation_id=conversation.id,
-        role="assistant",
-        content=result.answer,
-        created_at=now,
-    ))
+    session.add(
+        RAGConversationMessage(
+            conversation_id=conversation.id,
+            role="user",
+            content=request.question,
+            created_at=now,
+        )
+    )
+    session.add(
+        RAGConversationMessage(
+            conversation_id=conversation.id,
+            role="assistant",
+            content=result.answer,
+            created_at=now,
+        )
+    )
     conversation.updated_at = now
     session.add(conversation)
     await session.commit()
@@ -114,6 +120,7 @@ async def query_stream(
     browser sees ERR_INCOMPLETE_CHUNKED_ENCODING. All errors are yielded as
     {"type": "error"} events so the stream closes cleanly.
     """
+
     def _err(msg: str) -> bytes:
         return (json.dumps({"type": "error", "message": msg}) + "\n").encode()
 
@@ -178,18 +185,22 @@ async def query_stream(
 
     try:
         now = datetime.utcnow()
-        session.add(RAGConversationMessage(
-            conversation_id=conversation.id,
-            role="user",
-            content=request.question,
-            created_at=now,
-        ))
-        session.add(RAGConversationMessage(
-            conversation_id=conversation.id,
-            role="assistant",
-            content=full_answer,
-            created_at=now,
-        ))
+        session.add(
+            RAGConversationMessage(
+                conversation_id=conversation.id,
+                role="user",
+                content=request.question,
+                created_at=now,
+            )
+        )
+        session.add(
+            RAGConversationMessage(
+                conversation_id=conversation.id,
+                role="assistant",
+                content=full_answer,
+                created_at=now,
+            )
+        )
         conversation.updated_at = now
         session.add(conversation)
         await session.commit()
@@ -200,6 +211,7 @@ async def query_stream(
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 async def _get_or_create_conversation(
     conversation_id: uuid.UUID | None,
@@ -216,7 +228,7 @@ async def _get_or_create_conversation(
     title = first_question[:100].strip()
     conv = RAGConversation(user_id=user_id, title=title)
     session.add(conv)
-    await session.flush()   # populate conv.id before we use it
+    await session.flush()  # populate conv.id before we use it
     return conv
 
 
@@ -233,5 +245,3 @@ async def _load_history(
     )
     msgs = result.all()
     return [{"role": m.role, "content": m.content} for m in msgs]
-
-

@@ -12,10 +12,45 @@ logger = logging.getLogger(__name__)
 
 _STOP_WORDS = frozenset(
     {
-        "a", "an", "the", "is", "it", "in", "of", "and", "or", "to", "for",
-        "with", "on", "at", "by", "this", "that", "be", "are", "was", "were",
-        "as", "from", "have", "has", "had", "not", "but", "if", "its", "do",
-        "does", "did", "will", "would", "can", "could", "should", "may",
+        "a",
+        "an",
+        "the",
+        "is",
+        "it",
+        "in",
+        "of",
+        "and",
+        "or",
+        "to",
+        "for",
+        "with",
+        "on",
+        "at",
+        "by",
+        "this",
+        "that",
+        "be",
+        "are",
+        "was",
+        "were",
+        "as",
+        "from",
+        "have",
+        "has",
+        "had",
+        "not",
+        "but",
+        "if",
+        "its",
+        "do",
+        "does",
+        "did",
+        "will",
+        "would",
+        "can",
+        "could",
+        "should",
+        "may",
     }
 )
 
@@ -33,8 +68,12 @@ class BM25Indexer:
         index = BM25Okapi(tokenized)
         index_path = self._dir / f"{namespace}.pkl"
         with open(index_path, "wb") as f:
-            pickle.dump({"index": index, "chunk_ids": chunk_ids, "doc_ids": doc_ids, "texts": texts}, f)
-        logger.info("BM25 index built | namespace=%s chunks=%d path=%s", namespace, len(chunks), index_path)
+            pickle.dump(
+                {"index": index, "chunk_ids": chunk_ids, "doc_ids": doc_ids, "texts": texts}, f
+            )
+        logger.info(
+            "BM25 index built | namespace=%s chunks=%d path=%s", namespace, len(chunks), index_path
+        )
 
     def search(self, query: str, namespace: str, k: int = 20) -> list[tuple[str, float, str]]:
         """Returns list of (chunk_id, score, text)."""
@@ -59,15 +98,27 @@ class BM25Indexer:
             # All chunks belonged to this doc — remove the index file entirely.
             path = self._dir / f"{namespace}.pkl"
             path.unlink(missing_ok=True)
-            logger.info("BM25 index removed (empty after delete) | namespace=%s doc_id=%s", namespace, doc_id)
+            logger.info(
+                "BM25 index removed (empty after delete) | namespace=%s doc_id=%s",
+                namespace,
+                doc_id,
+            )
             return
 
         filtered_chunks = [
-            Document(page_content=data["texts"][i], metadata={"chunk_id": data["chunk_ids"][i], "doc_id": data["doc_ids"][i]})
+            Document(
+                page_content=data["texts"][i],
+                metadata={"chunk_id": data["chunk_ids"][i], "doc_id": data["doc_ids"][i]},
+            )
             for i in keep
         ]
         self.build(filtered_chunks, namespace)
-        logger.info("BM25 index rebuilt after delete | namespace=%s removed=%d remaining=%d", namespace, len(data["chunk_ids"]) - len(keep), len(keep))
+        logger.info(
+            "BM25 index rebuilt after delete | namespace=%s removed=%d remaining=%d",
+            namespace,
+            len(data["chunk_ids"]) - len(keep),
+            len(keep),
+        )
 
     def _load(self, namespace: str) -> dict | None:
         path = self._dir / f"{namespace}.pkl"

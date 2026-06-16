@@ -38,8 +38,7 @@ async def get_conversation(
 ) -> ConversationHistory:
     # Single query: fetch conv + messages together to avoid two round-trips to Neon
     conv_result = await session.exec(
-        select(RAGConversation)
-        .where(RAGConversation.id == conversation_id)
+        select(RAGConversation).where(RAGConversation.id == conversation_id)
     )
     conv = conv_result.first()
     if not conv or conv.user_id != user_id:

@@ -74,12 +74,14 @@ def mock_storage():
 
 # ── Auth ──────────────────────────────────────────────────────────────────────
 
+
 async def test_query_no_auth(client: AsyncClient):
     r = await client.post(QUERY_URL, json={"question": "What is the leave policy?"})
     assert r.status_code == 401
 
 
 # ── Input Validation ──────────────────────────────────────────────────────────
+
 
 async def test_query_empty_question(client: AsyncClient, auth_token: str, mock_pipeline):
     r = await client.post(
@@ -108,7 +110,9 @@ async def test_query_too_long_question(client: AsyncClient, auth_token: str, moc
     assert r.status_code == 422
 
 
-async def test_query_exactly_1000_chars_allowed(client: AsyncClient, auth_token: str, mock_pipeline):
+async def test_query_exactly_1000_chars_allowed(
+    client: AsyncClient, auth_token: str, mock_pipeline
+):
     r = await client.post(
         QUERY_URL,
         json={"question": "q" * 1000},
@@ -118,6 +122,7 @@ async def test_query_exactly_1000_chars_allowed(client: AsyncClient, auth_token:
 
 
 # ── Response Schema ───────────────────────────────────────────────────────────
+
 
 async def test_query_response_fields(client: AsyncClient, auth_token: str, mock_pipeline):
     r = await client.post(
@@ -133,7 +138,9 @@ async def test_query_response_fields(client: AsyncClient, auth_token: str, mock_
     assert "metadata" in data
 
 
-async def test_query_answer_matches_pipeline_output(client: AsyncClient, auth_token: str, mock_pipeline):
+async def test_query_answer_matches_pipeline_output(
+    client: AsyncClient, auth_token: str, mock_pipeline
+):
     r = await client.post(
         QUERY_URL,
         json={"question": "What is the leave policy?"},
@@ -180,6 +187,7 @@ async def test_query_conversation_id_is_uuid(client: AsyncClient, auth_token: st
 
 
 # ── Conversation creation & continuation ─────────────────────────────────────
+
 
 async def test_query_creates_new_conversation(client: AsyncClient, auth_token: str, mock_pipeline):
     """No conversation_id supplied → a new conversation is created."""
@@ -251,6 +259,7 @@ async def test_query_pipeline_receives_history_on_followup(
 
 # ── Invalid conversation_id ───────────────────────────────────────────────────
 
+
 async def test_query_invalid_conversation_id(client: AsyncClient, auth_token: str, mock_pipeline):
     r = await client.post(
         QUERY_URL,
@@ -280,6 +289,7 @@ async def test_query_other_users_conversation_id(
 
 
 # ── doc_id handling ───────────────────────────────────────────────────────────
+
 
 async def test_query_nonexistent_doc_id(client: AsyncClient, auth_token: str, mock_pipeline):
     r = await client.post(

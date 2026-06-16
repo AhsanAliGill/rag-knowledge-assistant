@@ -8,14 +8,9 @@ from fastapi import BackgroundTasks, HTTPException, UploadFile, status
 from sqlmodel import delete, func, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.services.config.rag_settings import rag_settings
 from app.models.chunk import ChunkType, RAGChunk
 from app.models.document import CorpusType, DocumentStatus, RAGDocument
 from app.models.ingestion_job import JobStatus, RAGIngestionJob
-from app.services.rag.evaluation.ground_truth_loader import GroundTruthStore
-from app.services.rag.ingestion.bm25_keyword_indexer import BM25Indexer
-from app.services.rag.ingestion.ingestion_runner import IngestionJobManager
-from app.services.rag.ingestion.qdrant_indexer import VectorIndexer
 from app.schemas.document import (
     DocumentDetailRead,
     DocumentListResponse,
@@ -24,6 +19,11 @@ from app.schemas.document import (
     GroundTruthUploadResponse,
     JobStatusResponse,
 )
+from app.services.config.rag_settings import rag_settings
+from app.services.rag.evaluation.ground_truth_loader import GroundTruthStore
+from app.services.rag.ingestion.bm25_keyword_indexer import BM25Indexer
+from app.services.rag.ingestion.ingestion_runner import IngestionJobManager
+from app.services.rag.ingestion.qdrant_indexer import VectorIndexer
 
 
 async def upload_document(
@@ -47,7 +47,9 @@ async def upload_document(
         select(RAGDocument).where(RAGDocument.sha256 == sha256, RAGDocument.user_id == user_id)
     )
     if existing.first():
-        raise HTTPException(status.HTTP_409_CONFLICT, "This document already exists in your corpus.")
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "This document already exists in your corpus."
+        )
 
     upload_dir = Path(rag_settings.UPLOAD_DIR) / str(user_id)
     upload_dir.mkdir(parents=True, exist_ok=True)
@@ -71,7 +73,7 @@ async def upload_document(
 
     job = RAGIngestionJob(doc_id=doc_id, user_id=user_id)
     session.add(job)
-    await session.flush()   # all fields have Python-side defaults; no refresh needed
+    await session.flush()  # all fields have Python-side defaults; no refresh needed
     await session.commit()
 
     background_tasks.add_task(_run_ingestion, job.id, session)
@@ -100,11 +102,11 @@ async def list_documents(
         try:
             query = query.where(RAGDocument.status == DocumentStatus(filter_status))
         except ValueError:
-            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, f"Invalid status: {filter_status}")
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_ENTITY, f"Invalid status: {filter_status}"
+            )
 
-    total_result = await session.exec(
-        select(func.count()).select_from(RAGDocument)
-    )
+    total_result = await session.exec(select(func.count()).select_from(RAGDocument))
     total = total_result.one()
 
     result = await session.exec(query.offset(offset).limit(limit))
@@ -126,14 +128,14 @@ async def get_document(
     doc = await _get_owned_doc(doc_id, user_id, session)
 
     parent_count = await session.exec(
-        select(func.count()).select_from(RAGChunk).where(
-            RAGChunk.doc_id == doc_id, RAGChunk.chunk_type == ChunkType.PARENT
-        )
+        select(func.count())
+        .select_from(RAGChunk)
+        .where(RAGChunk.doc_id == doc_id, RAGChunk.chunk_type == ChunkType.PARENT)
     )
     child_count = await session.exec(
-        select(func.count()).select_from(RAGChunk).where(
-            RAGChunk.doc_id == doc_id, RAGChunk.chunk_type != ChunkType.PARENT
-        )
+        select(func.count())
+        .select_from(RAGChunk)
+        .where(RAGChunk.doc_id == doc_id, RAGChunk.chunk_type != ChunkType.PARENT)
     )
 
     return DocumentDetailRead(
@@ -187,7 +189,9 @@ async def upload_ground_truth(
     await _get_owned_doc(doc_id, user_id, session)
 
     if len(pairs) > 200:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Maximum 200 Q&A pairs per upload.")
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY, "Maximum 200 Q&A pairs per upload."
+        )
 
     store = GroundTruthStore()
     store.save(str(doc_id), pairs)

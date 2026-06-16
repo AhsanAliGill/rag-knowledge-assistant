@@ -25,7 +25,7 @@ async def register_user(data: UserRegister, session: AsyncSession) -> UserRead:
         hashed_password=get_password_hash(data.password),
     )
     session.add(user)
-    await session.flush()   # sends INSERT, all Python-side defaults already set
+    await session.flush()  # sends INSERT, all Python-side defaults already set
     await session.commit()
     return UserRead.model_validate(user)
 

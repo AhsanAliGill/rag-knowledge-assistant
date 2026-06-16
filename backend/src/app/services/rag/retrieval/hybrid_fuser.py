@@ -16,9 +16,11 @@ def build_hybrid_retriever(
         logger.debug("BM25 index not found — using dense retriever only")
         return dense_retriever
 
-    logger.debug("Using EnsembleRetriever (%.0f%% dense + %.0f%% BM25)",
-                 rag_settings.RAG_DENSE_WEIGHT * 100,
-                 (1 - rag_settings.RAG_DENSE_WEIGHT) * 100)
+    logger.debug(
+        "Using EnsembleRetriever (%.0f%% dense + %.0f%% BM25)",
+        rag_settings.RAG_DENSE_WEIGHT * 100,
+        (1 - rag_settings.RAG_DENSE_WEIGHT) * 100,
+    )
     return EnsembleRetriever(
         retrievers=[dense_retriever, sparse_retriever],
         weights=[rag_settings.RAG_DENSE_WEIGHT, 1.0 - rag_settings.RAG_DENSE_WEIGHT],

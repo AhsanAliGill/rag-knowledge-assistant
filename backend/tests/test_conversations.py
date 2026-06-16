@@ -38,7 +38,9 @@ def mock_pipeline():
         yield instance
 
 
-async def _new_conversation(client: AsyncClient, token: str, question: str = "What is the policy?") -> str:
+async def _new_conversation(
+    client: AsyncClient, token: str, question: str = "What is the policy?"
+) -> str:
     """Create a conversation by querying once; returns its UUID string."""
     r = await client.post(
         QUERY_URL,
@@ -50,6 +52,7 @@ async def _new_conversation(client: AsyncClient, token: str, question: str = "Wh
 
 
 # ── List ──────────────────────────────────────────────────────────────────────
+
 
 async def test_list_conversations_empty(client: AsyncClient, auth_token: str):
     r = await client.get(CONV_URL, headers={"Authorization": f"Bearer {auth_token}"})
@@ -94,9 +97,7 @@ async def test_list_conversations_user_isolation(
     assert r.json() == []
 
 
-async def test_list_multiple_conversations(
-    client: AsyncClient, auth_token: str, mock_pipeline
-):
+async def test_list_multiple_conversations(client: AsyncClient, auth_token: str, mock_pipeline):
     await _new_conversation(client, auth_token, "Question A")
     await _new_conversation(client, auth_token, "Question B")
     r = await client.get(CONV_URL, headers={"Authorization": f"Bearer {auth_token}"})
@@ -109,6 +110,7 @@ async def test_list_conversations_no_auth(client: AsyncClient):
 
 
 # ── Get ───────────────────────────────────────────────────────────────────────
+
 
 async def test_get_conversation_success(client: AsyncClient, auth_token: str, mock_pipeline):
     conv_id = await _new_conversation(client, auth_token)
@@ -157,9 +159,7 @@ async def test_get_conversation_messages_in_chronological_order(
     assert messages[2]["content"] == "Second question"
 
 
-async def test_get_conversation_message_schema(
-    client: AsyncClient, auth_token: str, mock_pipeline
-):
+async def test_get_conversation_message_schema(client: AsyncClient, auth_token: str, mock_pipeline):
     conv_id = await _new_conversation(client, auth_token)
     r = await client.get(f"{CONV_URL}/{conv_id}", headers={"Authorization": f"Bearer {auth_token}"})
     msg = r.json()["messages"][0]
@@ -181,7 +181,9 @@ async def test_get_conversation_wrong_user(
     client: AsyncClient, auth_token: str, auth_token2: str, mock_pipeline
 ):
     conv_id = await _new_conversation(client, auth_token)
-    r = await client.get(f"{CONV_URL}/{conv_id}", headers={"Authorization": f"Bearer {auth_token2}"})
+    r = await client.get(
+        f"{CONV_URL}/{conv_id}", headers={"Authorization": f"Bearer {auth_token2}"}
+    )
     assert r.status_code == 404
 
 
@@ -192,14 +194,19 @@ async def test_get_conversation_no_auth(client: AsyncClient):
 
 # ── Delete ────────────────────────────────────────────────────────────────────
 
+
 async def test_delete_conversation_success(client: AsyncClient, auth_token: str, mock_pipeline):
     conv_id = await _new_conversation(client, auth_token)
 
-    r = await client.delete(f"{CONV_URL}/{conv_id}", headers={"Authorization": f"Bearer {auth_token}"})
+    r = await client.delete(
+        f"{CONV_URL}/{conv_id}", headers={"Authorization": f"Bearer {auth_token}"}
+    )
     assert r.status_code == 204
 
     # Confirm it's gone
-    get_r = await client.get(f"{CONV_URL}/{conv_id}", headers={"Authorization": f"Bearer {auth_token}"})
+    get_r = await client.get(
+        f"{CONV_URL}/{conv_id}", headers={"Authorization": f"Bearer {auth_token}"}
+    )
     assert get_r.status_code == 404
 
 
@@ -224,11 +231,15 @@ async def test_delete_conversation_wrong_user(
 ):
     conv_id = await _new_conversation(client, auth_token)
 
-    r = await client.delete(f"{CONV_URL}/{conv_id}", headers={"Authorization": f"Bearer {auth_token2}"})
+    r = await client.delete(
+        f"{CONV_URL}/{conv_id}", headers={"Authorization": f"Bearer {auth_token2}"}
+    )
     assert r.status_code == 404
 
     # Original still accessible to owner
-    get_r = await client.get(f"{CONV_URL}/{conv_id}", headers={"Authorization": f"Bearer {auth_token}"})
+    get_r = await client.get(
+        f"{CONV_URL}/{conv_id}", headers={"Authorization": f"Bearer {auth_token}"}
+    )
     assert get_r.status_code == 200
 
 

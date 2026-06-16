@@ -4,10 +4,10 @@ from typing import Optional
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, Query, UploadFile
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from app.controllers import document_controller as ctrl
 from app.db.session import get_session
 from app.dependencies import get_current_active_user, require_admin
 from app.models.user import User
-from app.controllers import document_controller as ctrl
 from app.schemas.document import (
     DocumentDetailRead,
     DocumentListResponse,

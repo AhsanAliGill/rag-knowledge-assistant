@@ -3,10 +3,10 @@ import uuid
 from fastapi import APIRouter, Depends, status
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from app.controllers import conversation_controller as ctrl
 from app.db.session import get_session
 from app.dependencies import get_current_active_user
 from app.models.user import User
-from app.controllers import conversation_controller as ctrl
 from app.schemas.conversation import ConversationHistory, ConversationSummary
 
 router = APIRouter(prefix="/rag/conversations", tags=["Conversations"])

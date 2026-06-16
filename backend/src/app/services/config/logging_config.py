@@ -20,5 +20,13 @@ def setup_logging() -> None:
         root.addHandler(handler)
 
     # Quieten noisy third-party loggers
-    for noisy in ("httpx", "httpcore", "openai", "langchain", "urllib3", "qdrant_client", "pdfminer"):
+    for noisy in (
+        "httpx",
+        "httpcore",
+        "openai",
+        "langchain",
+        "urllib3",
+        "qdrant_client",
+        "pdfminer",
+    ):
         logging.getLogger(noisy).setLevel(logging.WARNING)

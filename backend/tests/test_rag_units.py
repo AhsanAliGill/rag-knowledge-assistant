@@ -16,7 +16,6 @@ Covered:
 import uuid
 from unittest.mock import AsyncMock, MagicMock
 
-import pytest
 from langchain_core.documents import Document
 from langchain_core.messages import AIMessage, HumanMessage
 
@@ -32,8 +31,8 @@ from app.services.rag.ingestion.document_chunker import HierarchicalChunker
 from app.services.rag.pipeline import _to_lc_messages
 from app.services.rag.retrieval.query_rewriter import rewrite_query
 
-
 # ── helpers ───────────────────────────────────────────────────────────────────
+
 
 def _history(n_pairs: int, chars_each: int = 10) -> list[dict]:
     content = "x" * chars_each
@@ -49,8 +48,7 @@ def _history(n_pairs: int, chars_each: int = 10) -> list[dict]:
 
 def _make_docs(texts: list[str], category: str = "NarrativeText") -> list[Document]:
     return [
-        Document(page_content=t, metadata={"category": category, "page_number": 1})
-        for t in texts
+        Document(page_content=t, metadata={"category": category, "page_number": 1}) for t in texts
     ]
 
 
@@ -65,6 +63,7 @@ def _bm25_indexer(tmp_path):
 # history_summarizer
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class TestEstimateTokens:
     def test_empty(self):
         assert _estimate_tokens([]) == 0
@@ -74,7 +73,7 @@ class TestEstimateTokens:
 
     def test_multiple_messages(self):
         msgs = [
-            {"role": "user",      "content": "x" * 400},
+            {"role": "user", "content": "x" * 400},
             {"role": "assistant", "content": "y" * 800},
         ]
         assert _estimate_tokens(msgs) == 300  # 1200 / 4
@@ -145,6 +144,7 @@ class TestCompressHistory:
 # query_rewriter
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class TestRewriteQuery:
     async def test_returns_none_for_no_retrieval_token(self):
         llm = AsyncMock()
@@ -167,8 +167,10 @@ class TestRewriteQuery:
         llm.ainvoke.return_value = MagicMock(content="What is the annual leave entitlement?")
         result = await rewrite_query(
             "How many days?",
-            [{"role": "user", "content": "Tell me about leave."},
-             {"role": "assistant", "content": "Employees get 20 days."}],
+            [
+                {"role": "user", "content": "Tell me about leave."},
+                {"role": "assistant", "content": "Employees get 20 days."},
+            ],
             llm,
         )
         assert result == "What is the annual leave entitlement?"
@@ -185,7 +187,7 @@ class TestRewriteQuery:
         llm.ainvoke.return_value = MagicMock(content="Standalone q.")
 
         history = [
-            {"role": "user",      "content": "msg1"},
+            {"role": "user", "content": "msg1"},
             {"role": "assistant", "content": "reply1"},
         ]
         await rewrite_query("follow", history, llm)
@@ -209,6 +211,7 @@ class TestRewriteQuery:
 # ─────────────────────────────────────────────────────────────────────────────
 # BM25Indexer
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 class TestBM25Tokenizer:
     """Tests for the internal _tokenize method (no disk I/O needed)."""
@@ -289,9 +292,17 @@ class TestBM25BuildAndSearch:
     def test_search_returns_tuple_of_chunk_id_score_text(self, tmp_path):
         idx = _bm25_indexer(tmp_path)
         docs = [
-            Document(page_content="leave policy annual days", metadata={"chunk_id": "cid", "doc_id": "d"}),
-            Document(page_content="overtime compensation salary", metadata={"chunk_id": "cid2", "doc_id": "d"}),
-            Document(page_content="travel reimbursement expense", metadata={"chunk_id": "cid3", "doc_id": "d"}),
+            Document(
+                page_content="leave policy annual days", metadata={"chunk_id": "cid", "doc_id": "d"}
+            ),
+            Document(
+                page_content="overtime compensation salary",
+                metadata={"chunk_id": "cid2", "doc_id": "d"},
+            ),
+            Document(
+                page_content="travel reimbursement expense",
+                metadata={"chunk_id": "cid3", "doc_id": "d"},
+            ),
         ]
         idx.build(docs, "ns_d")
         results = idx.search("leave", "ns_d", k=1)
@@ -316,7 +327,8 @@ class TestBM25BuildAndSearch:
 # ─────────────────────────────────────────────────────────────────────────────
 # HierarchicalChunker
 # ─────────────────────────────────────────────────────────────────────────────
- 
+
+
 class TestHierarchicalChunker:
     def setup_method(self):
         self.chunker = HierarchicalChunker()
@@ -388,6 +400,7 @@ class TestHierarchicalChunker:
 # MetadataTagger
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class TestMetadataTagger:
     def setup_method(self):
         self.tagger = MetadataTagger()
@@ -403,6 +416,7 @@ class TestMetadataTagger:
 
     def test_default_corpus_namespace(self):
         from app.services.config.rag_settings import rag_settings
+
         tagged = self.tagger.tag(self._chunks(1), self.doc_id, None, "default")
         assert tagged[0].metadata["namespace"] == rag_settings.DEFAULT_CORPUS_NAMESPACE
 
@@ -412,7 +426,9 @@ class TestMetadataTagger:
             assert t.metadata["chunk_id"] == f"{str(self.doc_id)[:8]}_{i:06d}"
 
     def test_chunk_id_format_with_offset(self):
-        tagged = self.tagger.tag(self._chunks(2), self.doc_id, self.user_id, "user", chunk_offset=10)
+        tagged = self.tagger.tag(
+            self._chunks(2), self.doc_id, self.user_id, "user", chunk_offset=10
+        )
         assert tagged[0].metadata["chunk_id"] == f"{str(self.doc_id)[:8]}_000010"
         assert tagged[1].metadata["chunk_id"] == f"{str(self.doc_id)[:8]}_000011"
 
@@ -448,6 +464,7 @@ class TestMetadataTagger:
 # pipeline._to_lc_messages
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class TestToLcMessages:
     def test_empty_history_returns_empty_list(self):
         assert _to_lc_messages([]) == []
@@ -464,9 +481,9 @@ class TestToLcMessages:
 
     def test_alternating_roles_preserved(self):
         history = [
-            {"role": "user",      "content": "q1"},
+            {"role": "user", "content": "q1"},
             {"role": "assistant", "content": "a1"},
-            {"role": "user",      "content": "q2"},
+            {"role": "user", "content": "q2"},
             {"role": "assistant", "content": "a2"},
         ]
         msgs = _to_lc_messages(history)

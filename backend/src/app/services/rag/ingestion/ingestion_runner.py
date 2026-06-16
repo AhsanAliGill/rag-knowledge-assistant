@@ -3,18 +3,17 @@ import logging
 import uuid
 from datetime import datetime, timezone
 
-from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.models.chunk import ChunkType, RAGChunk
 from app.models.document import DocumentStatus, RAGDocument
 from app.models.ingestion_job import JobStatus, RAGIngestionJob
 from app.services.rag.ingestion.bm25_keyword_indexer import BM25Indexer
-from app.services.rag.ingestion.document_chunker import HierarchicalChunker
-from app.services.rag.ingestion.text_embedder import EmbeddingEngine
 from app.services.rag.ingestion.chunk_tagger import MetadataTagger
+from app.services.rag.ingestion.document_chunker import HierarchicalChunker
 from app.services.rag.ingestion.pdf_parser import DocumentParser
 from app.services.rag.ingestion.qdrant_indexer import VectorIndexer
+from app.services.rag.ingestion.text_embedder import EmbeddingEngine
 
 logger = logging.getLogger(__name__)
 
@@ -51,8 +50,7 @@ class IngestionJobManager:
             await self._update_job(job, JobStatus.PROCESSING, 35, "Tagging metadata...")
             tagged_parents = self._tagger.tag(parents, doc.id, job.user_id, 0)
             parent_id_map = {
-                p.metadata.get("chunk_id_key"): p.metadata["chunk_id"]
-                for p in tagged_parents
+                p.metadata.get("chunk_id_key"): p.metadata["chunk_id"] for p in tagged_parents
             }
             tagged_children = self._tagger.tag(children, doc.id, job.user_id, len(parents))
             for child in tagged_children:
@@ -63,7 +61,9 @@ class IngestionJobManager:
             # ── 4. Embed + BM25 in parallel ─────────────────────────────────────
             # BM25 only needs the text — no need to wait for embeddings.
             await self._update_job(
-                job, JobStatus.PROCESSING, 50,
+                job,
+                JobStatus.PROCESSING,
+                50,
                 f"Embedding {len(tagged_children)} chunks + building keyword index...",
             )
             await self._vector.ensure_collection()
@@ -101,7 +101,9 @@ class IngestionJobManager:
 
             logger.info(
                 "Ingestion completed | job=%s doc=%s chunks=%d duration=%.1fs",
-                job_id, doc.id, doc.chunk_count,
+                job_id,
+                doc.id,
+                doc.chunk_count,
                 (job.completed_at - job.started_at).total_seconds(),
             )
 
@@ -137,19 +139,21 @@ class IngestionJobManager:
             except ValueError:
                 ctype = ChunkType.CHILD
 
-            db_chunks.append(RAGChunk(
-                id=m["chunk_id"],
-                doc_id=doc_id,
-                user_id=user_id,
-                chunk_type=ctype,
-                parent_id=m.get("parent_id"),
-                child_index=m.get("child_index"),
-                text=chunk.page_content,
-                section_path=m.get("section_path"),
-                page_num=m.get("page"),
-                vector_id=m["chunk_id"] if ctype != ChunkType.PARENT else None,
-                token_count=len(chunk.page_content.split()),
-            ))
+            db_chunks.append(
+                RAGChunk(
+                    id=m["chunk_id"],
+                    doc_id=doc_id,
+                    user_id=user_id,
+                    chunk_type=ctype,
+                    parent_id=m.get("parent_id"),
+                    child_index=m.get("child_index"),
+                    text=chunk.page_content,
+                    section_path=m.get("section_path"),
+                    page_num=m.get("page"),
+                    vector_id=m["chunk_id"] if ctype != ChunkType.PARENT else None,
+                    token_count=len(chunk.page_content.split()),
+                )
+            )
 
         self._session.add_all(db_chunks)
         await self._session.commit()

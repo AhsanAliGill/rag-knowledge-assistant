@@ -50,34 +50,40 @@ class HierarchicalChunker:
             page_num = doc.metadata.get("page_number")
 
             # Parent = full element (section, page, or table)
-            parents.append(Document(
-                page_content=doc.page_content,
-                metadata={
-                    **doc.metadata,
-                    "chunk_type": "parent",
-                    "chunk_id_key": parent_id_key,
-                    "parent_id": None,
-                    "page_num": page_num,
-                    "element_type": category,
-                },
-            ))
+            parents.append(
+                Document(
+                    page_content=doc.page_content,
+                    metadata={
+                        **doc.metadata,
+                        "chunk_type": "parent",
+                        "chunk_id_key": parent_id_key,
+                        "parent_id": None,
+                        "page_num": page_num,
+                        "element_type": category,
+                    },
+                )
+            )
 
             if category == "Table":
                 # Critical: preserve entire table as a single child chunk
                 # This prevents column/row leakage during retrieval
-                children.append(Document(
-                    page_content=_clean_chunk(doc.page_content),
-                    metadata={
-                        **doc.metadata,
-                        "chunk_type": "child",
-                        "chunk_id_key": f"{parent_id_key}_c0000",
-                        "parent_id": parent_id_key,
-                        "child_index": 0,
-                        "page_num": page_num,
-                        "element_type": "Table",
-                    },
-                ))
-                logger.debug("Table preserved as single chunk | key=%s page=%s", parent_id_key, page_num)
+                children.append(
+                    Document(
+                        page_content=_clean_chunk(doc.page_content),
+                        metadata={
+                            **doc.metadata,
+                            "chunk_type": "child",
+                            "chunk_id_key": f"{parent_id_key}_c0000",
+                            "parent_id": parent_id_key,
+                            "child_index": 0,
+                            "page_num": page_num,
+                            "element_type": "Table",
+                        },
+                    )
+                )
+                logger.debug(
+                    "Table preserved as single chunk | key=%s page=%s", parent_id_key, page_num
+                )
             else:
                 # Text/Title/List: split into small semantic child chunks
                 child_docs = self._child_splitter.split_documents([doc])
@@ -86,19 +92,23 @@ class HierarchicalChunker:
                     if not cleaned:
                         continue
                     child.page_content = cleaned
-                    child.metadata.update({
-                        "chunk_type": "child",
-                        "chunk_id_key": f"{parent_id_key}_c{j:04d}",
-                        "parent_id": parent_id_key,
-                        "child_index": j,
-                        "page_num": page_num,
-                        "element_type": category,
-                    })
+                    child.metadata.update(
+                        {
+                            "chunk_type": "child",
+                            "chunk_id_key": f"{parent_id_key}_c{j:04d}",
+                            "parent_id": parent_id_key,
+                            "child_index": j,
+                            "page_num": page_num,
+                            "element_type": category,
+                        }
+                    )
                     children.append(child)
 
         table_count = sum(1 for p in parents if p.metadata.get("element_type") == "Table")
         logger.info(
             "Chunking done | parents=%d children=%d tables=%d",
-            len(parents), len(children), table_count,
+            len(parents),
+            len(children),
+            table_count,
         )
         return parents, children

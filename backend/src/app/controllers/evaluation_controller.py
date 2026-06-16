@@ -4,11 +4,8 @@ from fastapi import BackgroundTasks, HTTPException, status
 from sqlmodel import func, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.services.config.rag_settings import rag_settings
 from app.models.document import DocumentStatus, RAGDocument
 from app.models.evaluation import EvalStatus, RAGEvaluation, RAGEvaluationResult
-from app.services.rag.evaluation.evaluator import EvaluationRunner
-from app.services.rag.evaluation.ground_truth_loader import GroundTruthStore
 from app.schemas.evaluation import (
     EvaluationListItem,
     EvaluationListResponse,
@@ -19,6 +16,9 @@ from app.schemas.evaluation import (
     EvaluationTriggerResponse,
     PerQuestionResult,
 )
+from app.services.config.rag_settings import rag_settings
+from app.services.rag.evaluation.evaluator import EvaluationRunner
+from app.services.rag.evaluation.ground_truth_loader import GroundTruthStore
 
 
 async def trigger_evaluation(
@@ -35,7 +35,9 @@ async def trigger_evaluation(
 
     store = GroundTruthStore()
     if not store.exists(str(doc_id)):
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "No ground truth uploaded for this document.")
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST, "No ground truth uploaded for this document."
+        )
 
     qa_count = store.count(str(doc_id))
     evaluation = RAGEvaluation(doc_id=doc_id, user_id=user_id, qa_count=qa_count)
@@ -72,7 +74,9 @@ async def get_evaluation_status(
             eval_id=evaluation.id,
             doc_id=evaluation.doc_id,
             status=evaluation.status.value,
-            progress=int(evaluation.qa_done / evaluation.qa_count * 100) if evaluation.qa_count else 0,
+            progress=int(evaluation.qa_done / evaluation.qa_count * 100)
+            if evaluation.qa_count
+            else 0,
             qa_total=evaluation.qa_count,
             qa_done=evaluation.qa_done,
         )
@@ -112,8 +116,12 @@ async def get_evaluation_status(
     )
     pass_fail = EvaluationPassFail(
         faithfulness="pass" if scores.faithfulness >= thresholds.faithfulness else "fail",
-        answer_relevancy="pass" if scores.answer_relevancy >= thresholds.answer_relevancy else "fail",
-        context_precision="pass" if scores.context_precision >= thresholds.context_precision else "fail",
+        answer_relevancy="pass"
+        if scores.answer_relevancy >= thresholds.answer_relevancy
+        else "fail",
+        context_precision="pass"
+        if scores.context_precision >= thresholds.context_precision
+        else "fail",
         context_recall="pass" if scores.context_recall >= thresholds.context_recall else "fail",
         overall="pass" if scores.overall >= thresholds.overall else "fail",
     )
@@ -143,7 +151,9 @@ async def list_evaluations(
     if doc_id:
         query = query.where(RAGEvaluation.doc_id == doc_id)
 
-    total_q = select(func.count()).select_from(RAGEvaluation).where(RAGEvaluation.user_id == user_id)
+    total_q = (
+        select(func.count()).select_from(RAGEvaluation).where(RAGEvaluation.user_id == user_id)
+    )
     if doc_id:
         total_q = total_q.where(RAGEvaluation.doc_id == doc_id)
 
