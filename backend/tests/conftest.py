@@ -233,7 +233,7 @@ ADMIN_USER2 = {
 @pytest.fixture
 async def admin_user(session_factory) -> dict:
     from app.core.security import get_password_hash
-    from app.models.user import User, UserRole
+    from app.models.user import UserRole
 
     schema = _worker_schema()
     async with session_factory() as session:
@@ -262,7 +262,7 @@ async def admin_token(client: AsyncClient, admin_user: dict) -> str:
 @pytest.fixture
 async def admin_user2(session_factory) -> dict:
     from app.core.security import get_password_hash
-    from app.models.user import User, UserRole
+    from app.models.user import UserRole
 
     schema = _worker_schema()
     async with session_factory() as session:
