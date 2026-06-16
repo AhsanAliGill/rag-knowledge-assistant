@@ -1,0 +1,90 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Knowledge Assistant — full-stack compose
+#
+# Usage:
+#   cp .env.example .env          # fill in secrets once
+#   docker compose up --build -d  # build + start everything
+#   docker compose logs -f        # tail logs
+#   docker compose down           # stop
+#   docker compose down -v        # stop + wipe volumes
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+
+  # ── Backend: FastAPI + RAG pipeline ────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: knowledge-backend
+    restart: unless-stopped
+
+    env_file:
+      - ./backend/.env
+
+    ports:
+      - "8000:8000"
+
+    volumes:
+      # Persistent data
+      - uploads:/app/uploads
+      - bm25_indexes:/app/bm25_indexes
+      - ground_truth:/app/ground_truth
+      # Bind mount — local src/ → container src/
+      # uvicorn --reload watches /app/src and restarts on every file save
+      - ./backend/src:/app/src
+
+    # --reload flag so uvicorn picks up file changes automatically
+
+
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 45s
+
+    networks:
+      - app-net
+
+
+  # ── Frontend: TanStack Start — Vite dev server with HMR ───────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev    # lightweight dev image, runs: npm run dev
+    container_name: knowledge-frontend
+    restart: unless-stopped
+
+    environment:
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+
+    ports:
+      - "3000:3000"
+
+    volumes:
+      # Bind mount — local src/ → container src/
+      # Vite HMR detects changes and hot-reloads the browser instantly
+      - ./frontend/src:/app/src
+      # Protect the container's node_modules — don't let the host folder overwrite it
+      - /app/node_modules
+
+    depends_on:
+      backend:
+        condition: service_healthy
+
+    networks:
+      - app-net
+
+
+# ── Shared network ─────────────────────────────────────────────────────────
+networks:
+  app-net:
+    driver: bridge
+
+
+# ── Named volumes (data persists between rebuilds) ─────────────────────────
+volumes:
+  uploads:
+  bm25_indexes:
+  ground_truth:

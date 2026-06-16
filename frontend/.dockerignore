@@ -1,0 +1,24 @@
+# Dependencies — reinstalled fresh in Docker
+node_modules/
+
+# Build outputs — generated during Docker build
+.output/
+dist/
+.cache/
+
+# Dev-only Nitro artifacts
+.nitro/
+
+# Secrets — never bake into the image
+.env
+.env.local
+.env.*.local
+
+# Editor / OS noise
+.DS_Store
+Thumbs.db
+*.log
+
+# Git
+.git/
+.gitignore

@@ -1,0 +1,12 @@
+.env
+uploads/
+bm25_indexes/
+ground_truth/
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+*.egg-info/

@@ -1,0 +1,82 @@
+[project]
+name = "backend"
+version = "0.1.0"
+description = "Company Knowledge Assistant - Backend API"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "alembic>=1.18.4",
+    "asyncpg>=0.31.0",
+    "fastapi>=0.136.3",
+    "passlib[bcrypt]>=1.7.4",
+    "psycopg2>=2.9.12",
+    "pydantic-settings>=2.14.1",
+    "python-dotenv>=1.2.2",
+    "python-jose[cryptography]>=3.5.0",
+    "python-multipart>=0.0.32",
+    "sqlmodel>=0.0.38",
+    "uvicorn[standard]>=0.49.0",
+    # RAG pipeline — LangChain
+    "langchain>=0.3.0",
+    "langchain-core>=0.3.0",
+    "langchain-community>=0.3.0",
+    "langchain-openai>=0.2.0",
+    "langchain-openrouter>=0.0.1",
+    "langchain-cohere>=0.3.0",
+    "langchain-qdrant>=0.2.0",
+    "langchain-text-splitters>=0.3.0",
+    # PDF parsing
+    "pymupdf>=1.24.0",
+    "unstructured[pdf]>=0.15.0",
+    # Vector DB
+    "qdrant-client>=1.12.0",
+    # Sparse retrieval
+    "rank-bm25>=0.2.2",
+    # LLM / Embedding APIs
+    "openai>=1.50.0",
+    "cohere>=5.0.0",
+    # Token counting
+    "tiktoken>=0.8.0",
+    # Evaluation
+    "ragas>=0.2.0",
+    "datasets>=3.0.0",
+    "unstructured-inference>=1.6.13",
+    "langchain-groq>=1.1.3",
+]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=9.0.3",
+    "pytest-asyncio>=1.4.0",
+    "pytest-cov>=6.0.0",
+    "pytest-xdist>=3.6.1",
+    "ruff>=0.8.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/app"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+addopts = "-n auto --dist=loadfile -p no:warnings --tb=short"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+# E/W = pycodestyle, F = pyflakes, I = isort
+select = ["E", "W", "F", "I"]
+ignore = [
+    "E501",  # line too long — formatter handles this
+]
+
+[tool.uv]
+package = true

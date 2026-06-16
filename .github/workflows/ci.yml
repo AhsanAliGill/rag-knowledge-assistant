@@ -1,0 +1,204 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# CI pipeline — Company Knowledge Assistant (FastAPI + PostgreSQL + uv)
+#
+# Three parallel jobs:
+#   lint     → ruff (style + format)
+#   security → pip-audit (dependency CVE scan)
+#   test     → pytest against a real PostgreSQL instance
+#
+# Place this file at: .github/workflows/ci.yml
+# ──────────────────────────────────────────────────────────────────────────────
+
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - ".gitignore"
+      - "LICENSE"
+  pull_request:
+    branches: [main, develop]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - ".gitignore"
+      - "LICENSE"
+
+# Least-privilege token: jobs only need to read the repo.
+permissions:
+  contents: read
+
+# ── Shared constants ──────────────────────────────────────────────────────────
+env:
+  PYTHON_VERSION: "3.11"
+  # Keep this in sync with the uv version used locally.
+  UV_VERSION: "0.5.x"
+  # All commands run from the backend sub-directory.
+  WORKING_DIR: backend
+
+# ── Job 1: Lint & Format ──────────────────────────────────────────────────────
+jobs:
+  lint:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIR }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # setup-uv handles both installing uv and caching downloaded packages.
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+          # Cache key changes when the lockfile changes → fresh install on updates.
+          cache-dependency-glob: "backend/uv.lock"
+
+      - name: Install Python ${{ env.PYTHON_VERSION }}
+        run: uv python install ${{ env.PYTHON_VERSION }}
+
+      # --only-group dev installs dev extras without the heavy RAG prod deps.
+      - name: Install dev dependencies
+        run: uv sync --only-group dev
+
+      - name: ruff — lint
+        run: uv run ruff check src/ tests/
+
+      - name: ruff — format check
+        run: uv run ruff format --check src/ tests/
+
+  # ── Job 2: Security Audit ───────────────────────────────────────────────────
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIR }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+          cache-dependency-glob: "backend/uv.lock"
+
+      - name: Install Python ${{ env.PYTHON_VERSION }}
+        run: uv python install ${{ env.PYTHON_VERSION }}
+
+      # Export locked prod deps to a plain requirements file, then audit.
+      # --no-dev keeps the audit focused on what ships to production.
+      - name: Export production requirements
+        run: uv export --no-dev --format requirements-txt > /tmp/requirements-prod.txt
+
+      - name: Audit dependencies with pip-audit
+        run: uv tool run pip-audit --requirement /tmp/requirements-prod.txt
+
+  # ── Job 3: Tests ─────────────────────────────────────────────────────────────
+  test:
+    name: Test (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    strategy:
+      fail-fast: true
+      matrix:
+        # Pin to 3.11; add 3.12 here when you want a multi-version matrix.
+        python-version: ["3.11"]
+
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIR }}
+
+    # ── PostgreSQL service container ──────────────────────────────────────────
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ci_user
+          POSTGRES_PASSWORD: ci_password
+          POSTGRES_DB: ci_db
+        ports:
+          - 5432:5432
+        # Wait for Postgres to be ready before any test step runs.
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    # ── Environment variables ─────────────────────────────────────────────────
+    env:
+      # Both point to the same CI database; conftest.py manages per-worker schemas.
+      DATABASE_URL: postgresql+asyncpg://ci_user:ci_password@localhost:5432/ci_db
+      TEST_DATABASE_URL: postgresql+asyncpg://ci_user:ci_password@localhost:5432/ci_db
+
+      # Used for JWT signing. Store a real value in GitHub Secrets for prod;
+      # any non-empty string works for tests since no real data is involved.
+      SECRET_KEY: ${{ secrets.SECRET_KEY || 'ci-only-not-used-in-production' }}
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+
+      # ── RAG API keys ─────────────────────────────────────────────────────
+      # All RAG pipeline calls are mocked in the test suite (mock_pipeline /
+      # mock_storage fixtures), so these placeholders are never actually used.
+      # They exist only to prevent ValidationError on config class import.
+      OPENROUTER_API_KEY: ci-placeholder
+      COHERE_API_KEY: ci-placeholder
+      GROQ_API_KEY: ci-placeholder
+      QDRANT_URL: http://localhost:6333
+      QDRANT_API_KEY: ci-placeholder
+      QDRANT_COLLECTION: ci_collection
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+          cache-dependency-glob: "backend/uv.lock"
+
+      - name: Install Python ${{ matrix.python-version }}
+        run: uv python install ${{ matrix.python-version }}
+
+      # Full install (prod + dev) — required because tests import the app code.
+      - name: Install all dependencies
+        run: uv sync
+
+      # pytest is already configured in pyproject.toml [tool.pytest.ini_options]:
+      #   -n auto --dist=loadfile  → xdist parallel workers (one per test file)
+      #   per-worker PostgreSQL schemas → complete data isolation between workers
+      # --cov-fail-under enforces a minimum coverage gate on every PR.
+      - name: Run tests with coverage
+        run: |
+          uv run pytest \
+            --cov=src/app \
+            --cov-report=term-missing \
+            --cov-report=xml:coverage.xml \
+            --cov-fail-under=70
+
+      # Always upload the XML report so it's available even on failure.
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report-py${{ matrix.python-version }}
+          path: backend/coverage.xml
+          retention-days: 7

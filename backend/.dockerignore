@@ -1,0 +1,38 @@
+# Python artifacts
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+
+# Test & lint tools
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+htmlcov/
+.coverage
+tests/
+
+# Local runtime data (mounted as volumes in production)
+uploads/
+bm25_indexes/
+ground_truth/
+
+# Secrets — never bake into the image
+.env
+.env.local
+.env.*.local
+
+# Editor / OS noise
+.git/
+.gitignore
+.DS_Store
+Thumbs.db
+*.log
+
+# Docs (not needed at runtime)
+README.md
+CLAUDE.md

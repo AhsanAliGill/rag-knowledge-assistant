@@ -1,0 +1,161 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-ring-offset-background: var(--background);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+:root {
+  --radius: 0.75rem;
+
+  /* ── Electric Vaporwave ── */
+  --background: #E0AAFF;
+  --foreground: #1A1B41;
+  --card: rgba(255, 255, 255, 0.20);
+  --card-foreground: #1A1B41;
+  --popover: rgba(255, 255, 255, 0.96);
+  --popover-foreground: #1A1B41;
+  --primary: #F62681;
+  --primary-foreground: #ffffff;
+  --secondary: rgba(255, 255, 255, 0.24);
+  --secondary-foreground: #1A1B41;
+  --muted: rgba(255, 255, 255, 0.24);
+  --muted-foreground: #5B5C8A;
+  --accent: rgba(0, 242, 254, 0.20);
+  --accent-foreground: #1A1B41;
+  --destructive: oklch(0.58 0.22 25);
+  --destructive-foreground: #ffffff;
+  --border: rgba(255, 255, 255, 0.30);
+  --input: rgba(255, 255, 255, 0.30);
+  --ring: #00F2FE;
+  --sidebar: #1A1B41;
+  --sidebar-foreground: #ffffff;
+  --sidebar-primary: #00F2FE;
+  --sidebar-primary-foreground: #1A1B41;
+  --sidebar-accent: rgba(255, 255, 255, 0.08);
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: rgba(255, 255, 255, 0.10);
+  --sidebar-ring: #00F2FE;
+}
+
+@layer base {
+  html,
+  body {
+    background: linear-gradient(135deg, #D8B4FE 0%, #E0AAFF 40%, #C4B5FD 70%, #DDD6FE 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
+    color: #1A1B41;
+    font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+  }
+}
+
+/* ── Glassmorphism utilities ── */
+@layer utilities {
+  .glass {
+    background: rgba(255, 255, 255, 0.87);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(196, 181, 253, 0.40);
+    box-shadow: 0 4px 24px rgba(124, 58, 237, 0.12);
+  }
+
+  .glass-strong {
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(196, 181, 253, 0.50);
+    box-shadow: 0 8px 32px rgba(124, 58, 237, 0.18);
+  }
+
+  .glass-opaque {
+    background: rgba(255, 255, 255, 0.97);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(196, 181, 253, 0.40);
+    box-shadow: 0 8px 32px rgba(124, 58, 237, 0.15);
+  }
+
+  /* ── Neon glow shadows ── */
+  .neon-cyan {
+    box-shadow: 0 0 12px rgba(0, 242, 254, 0.65), 0 0 28px rgba(0, 242, 254, 0.30), 0 4px 16px rgba(0, 0, 0, 0.15);
+  }
+
+  .neon-magenta {
+    box-shadow: 0 0 12px rgba(246, 38, 129, 0.65), 0 0 28px rgba(246, 38, 129, 0.30), 0 4px 16px rgba(0, 0, 0, 0.15);
+  }
+
+  .neon-violet {
+    box-shadow: 0 0 12px rgba(167, 139, 250, 0.65), 0 0 28px rgba(167, 139, 250, 0.30), 0 4px 16px rgba(0, 0, 0, 0.15);
+  }
+
+  .neon-gradient {
+    box-shadow: 0 0 14px rgba(246, 38, 129, 0.50), 0 0 28px rgba(0, 242, 254, 0.25), 0 4px 20px rgba(0, 0, 0, 0.20);
+  }
+}
+
+/* ── Keyframe animations ── */
+@keyframes orbit-cw {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes orbit-ccw {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(-360deg); }
+}
+
+@keyframes loader-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.45; transform: scale(0.78); }
+}
+
+@keyframes loader-text-fade {
+  0%, 100% { opacity: 0.35; }
+  50%       { opacity: 1; }
+}
+
+@keyframes conv-card-enter {
+  from { opacity: 0; transform: translateY(18px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+
+@keyframes float-icon {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-7px); }
+}
