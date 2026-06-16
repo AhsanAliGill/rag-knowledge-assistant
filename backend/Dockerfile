@@ -16,7 +16,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy manifests first — cached until uv.lock changes
-COPY pyproject.toml uv.lock README.md ./
+COPY pyproject.toml uv.lock ./
+RUN touch README.md
 
 # Install all dependencies from the lockfile, skip the project package for now
 # This layer is reused on every rebuild as long as uv.lock is unchanged

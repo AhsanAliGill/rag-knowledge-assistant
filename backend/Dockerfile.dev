@@ -18,7 +18,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 # Copy manifests first → this layer is cached until uv.lock changes
-COPY pyproject.toml uv.lock README.md ./
+COPY pyproject.toml uv.lock ./
+RUN touch README.md
 
 # Install all deps (including dev group) but NOT the project package yet
 # Doing this before COPY src/ lets Docker cache the heavy dep layer
