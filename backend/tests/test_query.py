@@ -291,7 +291,9 @@ async def test_query_other_users_conversation_id(
 # ── doc_id handling ───────────────────────────────────────────────────────────
 
 
-@pytest.mark.skip(reason="query controller passes doc_id=None to pipeline — request.doc_id is ignored, no 404 raised")
+@pytest.mark.skip(
+    reason="query controller passes doc_id=None to pipeline — request.doc_id is ignored, no 404 raised"
+)
 async def test_query_nonexistent_doc_id(client: AsyncClient, auth_token: str, mock_pipeline):
     r = await client.post(
         QUERY_URL,
@@ -301,7 +303,9 @@ async def test_query_nonexistent_doc_id(client: AsyncClient, auth_token: str, mo
     assert r.status_code == 404
 
 
-@pytest.mark.skip(reason="query controller passes doc_id=None to pipeline — doc ownership not validated")
+@pytest.mark.skip(
+    reason="query controller passes doc_id=None to pipeline — doc ownership not validated"
+)
 async def test_query_other_users_doc_id(
     client: AsyncClient, auth_token: str, auth_token2: str, mock_pipeline, mock_storage
 ):
@@ -321,7 +325,9 @@ async def test_query_other_users_doc_id(
     assert r.status_code == 404
 
 
-@pytest.mark.skip(reason="query controller passes doc_id=None to pipeline — pending status not validated")
+@pytest.mark.skip(
+    reason="query controller passes doc_id=None to pipeline — pending status not validated"
+)
 async def test_query_pending_doc_not_queryable(
     client: AsyncClient, auth_token: str, mock_pipeline, mock_storage
 ):

@@ -107,7 +107,9 @@ async def test_upload_too_large_rejected(client: AsyncClient, admin_token: str):
 async def test_upload_duplicate_rejected(client: AsyncClient, admin_token: str, mock_storage):
     await client.post(DOCS_URL, files=_pdf(), headers={"Authorization": f"Bearer {admin_token}"})
 
-    r = await client.post(DOCS_URL, files=_pdf(), headers={"Authorization": f"Bearer {admin_token}"})
+    r = await client.post(
+        DOCS_URL, files=_pdf(), headers={"Authorization": f"Bearer {admin_token}"}
+    )
     assert r.status_code == 409
     assert "already exists" in r.json()["detail"]
 
@@ -139,7 +141,9 @@ async def test_upload_with_corpus_name_and_description(
 
 
 async def test_upload_response_schema(client: AsyncClient, admin_token: str, mock_storage):
-    r = await client.post(DOCS_URL, files=_pdf(), headers={"Authorization": f"Bearer {admin_token}"})
+    r = await client.post(
+        DOCS_URL, files=_pdf(), headers={"Authorization": f"Bearer {admin_token}"}
+    )
     assert set(r.json().keys()) == {"doc_id", "job_id", "status", "message"}
 
 
@@ -175,7 +179,9 @@ async def test_list_documents_after_upload(client: AsyncClient, admin_token: str
     assert data["documents"][0]["filename"] == "test.pdf"
 
 
-@pytest.mark.skip(reason="list_documents controller has no user_id filter — returns all docs for all users")
+@pytest.mark.skip(
+    reason="list_documents controller has no user_id filter — returns all docs for all users"
+)
 async def test_list_documents_isolation_between_users(
     client: AsyncClient, admin_token: str, auth_token2: str, mock_storage
 ):
