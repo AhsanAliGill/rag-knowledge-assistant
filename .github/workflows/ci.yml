@@ -35,7 +35,7 @@ permissions:
 env:
   PYTHON_VERSION: "3.11"
   # Keep this in sync with the uv version used locally.
-  UV_VERSION: "0.5.x"
+  UV_VERSION: "0.6.x"
   # All commands run from the backend sub-directory.
   WORKING_DIR: backend
 
