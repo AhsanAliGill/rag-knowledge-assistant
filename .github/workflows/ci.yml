@@ -100,7 +100,7 @@ jobs:
       # Export locked prod deps, then audit with system pip (has ensurepip).
       - name: Audit dependencies
         run: |
-          uv export --no-dev --format requirements-txt -o /tmp/requirements-prod.txt
+          uv export --no-dev --no-emit-project --format requirements-txt -o /tmp/requirements-prod.txt
           pip install pip-audit --quiet
           pip-audit --requirement /tmp/requirements-prod.txt
 
