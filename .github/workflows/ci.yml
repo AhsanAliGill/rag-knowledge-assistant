@@ -97,9 +97,12 @@ jobs:
           enable-cache: true
           cache-dependency-glob: "backend/uv.lock"
 
-      # uv audit reads directly from uv.lock — no Python or venv needed.
+      # Export locked prod deps, then audit with system pip (has ensurepip).
       - name: Audit dependencies
-        run: uv audit
+        run: |
+          uv export --no-dev --format requirements-txt -o /tmp/requirements-prod.txt
+          pip install pip-audit --quiet
+          pip-audit --requirement /tmp/requirements-prod.txt
 
   # ── Job 3: Tests ─────────────────────────────────────────────────────────────
   test:
