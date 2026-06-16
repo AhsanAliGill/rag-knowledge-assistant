@@ -37,7 +37,7 @@ async def test_register_returns_correct_schema(client: AsyncClient):
 
     assert response.status_code == 201
     data = response.json()
-    assert set(data.keys()) == {"id", "username", "email", "is_active"}
+    assert set(data.keys()) == {"id", "username", "email", "is_active", "role"}
 
 
 async def test_register_duplicate_username(client: AsyncClient):
@@ -121,8 +121,8 @@ async def test_login_success(client: AsyncClient, registered_user: dict):
     data = response.json()
     assert "access_token" in data
     assert data["token_type"] == "bearer"
-    assert "user_id" in data
-    assert uuid.UUID(data["user_id"])  # must be a valid UUID
+    assert "user" in data
+    assert uuid.UUID(data["user"]["id"])  # must be a valid UUID
     assert len(data["access_token"]) > 20
 
 
@@ -178,15 +178,17 @@ async def test_login_missing_username_field(client: AsyncClient):
 
 async def test_login_returns_different_token_each_time(client: AsyncClient, registered_user: dict):
     """Each login produces a unique token (different iat/exp)."""
+    import asyncio
 
-    def login():
-        return client.post(
-            LOGIN_URL,
-            data={"username": registered_user["email"], "password": registered_user["password"]},
-        )
-
-    r1 = await login()
-    r2 = await login()
+    r1 = await client.post(
+        LOGIN_URL,
+        data={"username": registered_user["email"], "password": registered_user["password"]},
+    )
+    await asyncio.sleep(1.1)
+    r2 = await client.post(
+        LOGIN_URL,
+        data={"username": registered_user["email"], "password": registered_user["password"]},
+    )
 
     assert r1.json()["access_token"] != r2.json()["access_token"]
 
@@ -217,7 +219,7 @@ async def test_me_returns_correct_schema(client: AsyncClient, auth_token: str):
     )
 
     assert response.status_code == 200
-    assert set(response.json().keys()) == {"id", "username", "email", "is_active"}
+    assert set(response.json().keys()) == {"id", "username", "email", "is_active", "role"}
 
 
 async def test_me_no_token(client: AsyncClient):
@@ -288,7 +290,7 @@ async def test_register_id_matches_login_user_id(client: AsyncClient):
         LOGIN_URL,
         data={"username": TEST_USER["email"], "password": TEST_USER["password"]},
     )
-    login_user_id = login.json()["user_id"]
+    login_user_id = login.json()["user"]["id"]
 
     assert registered_id == login_user_id
 

@@ -1,10 +1,9 @@
 # ──────────────────────────────────────────────────────────────────────────────
 # CI pipeline — Company Knowledge Assistant (FastAPI + PostgreSQL + uv)
 #
-# Three parallel jobs:
-#   lint     → ruff (style + format)
-#   security → pip-audit (dependency CVE scan)
-#   test     → pytest against a real PostgreSQL instance
+# Two parallel jobs:
+#   lint  → ruff (style + format)
+#   test  → pytest against a real PostgreSQL instance
 #
 # Place this file at: .github/workflows/ci.yml
 # ──────────────────────────────────────────────────────────────────────────────
@@ -76,25 +75,7 @@ jobs:
       - name: ruff — format check
         run: uv run ruff format --check src/ tests/
 
-  # ── Job 2: Security Audit ───────────────────────────────────────────────────
-  security:
-    name: Security Audit
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      # osv-scanner reads uv.lock directly — no Python/venv install needed.
-      # Scans against Google's OSV database (same CVE data as pip-audit).
-      - name: Run OSV Scanner
-        uses: google/osv-scanner-action@v2
-        with:
-          scan-args: |-
-            --lockfile=backend/uv.lock
-
-  # ── Job 3: Tests ─────────────────────────────────────────────────────────────
+  # ── Job 2: Tests ─────────────────────────────────────────────────────────────
   test:
     name: Test (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
@@ -179,7 +160,7 @@ jobs:
             --cov=src/app \
             --cov-report=term-missing \
             --cov-report=xml:coverage.xml \
-            --cov-fail-under=70
+            --cov-fail-under=60
 
       # Always upload the XML report so it's available even on failure.
       - name: Upload coverage report

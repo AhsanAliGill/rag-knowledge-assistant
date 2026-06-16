@@ -215,3 +215,74 @@ async def auth_token2(client: AsyncClient, registered_user2: dict) -> str:
     )
     assert response.status_code == 200
     return response.json()["access_token"]
+
+
+ADMIN_USER = {
+    "username": "adminuser",
+    "email": "admin@example.com",
+    "password": "AdminPass123!",
+}
+
+ADMIN_USER2 = {
+    "username": "adminuser2",
+    "email": "admin2@example.com",
+    "password": "AdminPass456!",
+}
+
+
+@pytest.fixture
+async def admin_user(session_factory) -> dict:
+    from app.core.security import get_password_hash
+    from app.models.user import User, UserRole
+
+    schema = _worker_schema()
+    async with session_factory() as session:
+        await session.execute(text(f'SET search_path TO "{schema}"'))
+        user = User(
+            username=ADMIN_USER["username"],
+            email=ADMIN_USER["email"],
+            hashed_password=get_password_hash(ADMIN_USER["password"]),
+            role=UserRole.admin,
+        )
+        session.add(user)
+        await session.commit()
+    return ADMIN_USER
+
+
+@pytest.fixture
+async def admin_token(client: AsyncClient, admin_user: dict) -> str:
+    response = await client.post(
+        "/api/v1/auth/login",
+        data={"username": admin_user["email"], "password": admin_user["password"]},
+    )
+    assert response.status_code == 200
+    return response.json()["access_token"]
+
+
+@pytest.fixture
+async def admin_user2(session_factory) -> dict:
+    from app.core.security import get_password_hash
+    from app.models.user import User, UserRole
+
+    schema = _worker_schema()
+    async with session_factory() as session:
+        await session.execute(text(f'SET search_path TO "{schema}"'))
+        user = User(
+            username=ADMIN_USER2["username"],
+            email=ADMIN_USER2["email"],
+            hashed_password=get_password_hash(ADMIN_USER2["password"]),
+            role=UserRole.admin,
+        )
+        session.add(user)
+        await session.commit()
+    return ADMIN_USER2
+
+
+@pytest.fixture
+async def admin_token2(client: AsyncClient, admin_user2: dict) -> str:
+    response = await client.post(
+        "/api/v1/auth/login",
+        data={"username": admin_user2["email"], "password": admin_user2["password"]},
+    )
+    assert response.status_code == 200
+    return response.json()["access_token"]

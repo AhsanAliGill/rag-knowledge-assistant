@@ -411,53 +411,45 @@ class TestMetadataTagger:
         return [Document(page_content=f"content {i}", metadata={}) for i in range(n)]
 
     def test_user_corpus_namespace(self):
-        tagged = self.tagger.tag(self._chunks(1), self.doc_id, self.user_id, "user")
+        tagged = self.tagger.tag(self._chunks(1), self.doc_id, self.user_id)
         assert tagged[0].metadata["namespace"] == f"user_{self.user_id}"
 
-    def test_default_corpus_namespace(self):
-        from app.services.config.rag_settings import rag_settings
-
-        tagged = self.tagger.tag(self._chunks(1), self.doc_id, None, "default")
-        assert tagged[0].metadata["namespace"] == rag_settings.DEFAULT_CORPUS_NAMESPACE
+    def test_none_user_id_namespace(self):
+        tagged = self.tagger.tag(self._chunks(1), self.doc_id, None)
+        assert tagged[0].metadata["namespace"] == f"user_{None}"
 
     def test_chunk_id_format_from_zero(self):
-        tagged = self.tagger.tag(self._chunks(3), self.doc_id, self.user_id, "user", chunk_offset=0)
+        tagged = self.tagger.tag(self._chunks(3), self.doc_id, self.user_id, 0)
         for i, t in enumerate(tagged):
             assert t.metadata["chunk_id"] == f"{str(self.doc_id)[:8]}_{i:06d}"
 
     def test_chunk_id_format_with_offset(self):
-        tagged = self.tagger.tag(
-            self._chunks(2), self.doc_id, self.user_id, "user", chunk_offset=10
-        )
+        tagged = self.tagger.tag(self._chunks(2), self.doc_id, self.user_id, 10)
         assert tagged[0].metadata["chunk_id"] == f"{str(self.doc_id)[:8]}_000010"
         assert tagged[1].metadata["chunk_id"] == f"{str(self.doc_id)[:8]}_000011"
 
     def test_doc_id_is_string(self):
-        tagged = self.tagger.tag(self._chunks(1), self.doc_id, self.user_id, "user")
+        tagged = self.tagger.tag(self._chunks(1), self.doc_id, self.user_id)
         assert tagged[0].metadata["doc_id"] == str(self.doc_id)
 
     def test_user_id_is_string(self):
-        tagged = self.tagger.tag(self._chunks(1), self.doc_id, self.user_id, "user")
+        tagged = self.tagger.tag(self._chunks(1), self.doc_id, self.user_id)
         assert tagged[0].metadata["user_id"] == str(self.user_id)
 
-    def test_none_user_id_stored_as_none(self):
-        tagged = self.tagger.tag(self._chunks(1), self.doc_id, None, "default")
-        assert tagged[0].metadata["user_id"] is None
+    def test_none_user_id_stored_as_string(self):
+        tagged = self.tagger.tag(self._chunks(1), self.doc_id, None)
+        assert tagged[0].metadata["user_id"] == "None"
 
     def test_existing_metadata_preserved(self):
         chunks = [Document(page_content="text", metadata={"page_number": 3, "category": "Table"})]
-        tagged = self.tagger.tag(chunks, self.doc_id, self.user_id, "user")
+        tagged = self.tagger.tag(chunks, self.doc_id, self.user_id)
         assert tagged[0].metadata["page_number"] == 3
         assert tagged[0].metadata["category"] == "Table"
 
     def test_output_length_matches_input(self):
         chunks = self._chunks(5)
-        tagged = self.tagger.tag(chunks, self.doc_id, self.user_id, "user")
+        tagged = self.tagger.tag(chunks, self.doc_id, self.user_id)
         assert len(tagged) == 5
-
-    def test_corpus_type_stored(self):
-        tagged = self.tagger.tag(self._chunks(1), self.doc_id, self.user_id, "user")
-        assert tagged[0].metadata["corpus_type"] == "user"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
