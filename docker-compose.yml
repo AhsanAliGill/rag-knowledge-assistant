@@ -1,41 +1,43 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Knowledge Assistant — full-stack compose
+# Knowledge Assistant — full-stack dev compose
 #
-# Usage:
-#   cp .env.example .env          # fill in secrets once
-#   docker compose up --build -d  # build + start everything
-#   docker compose logs -f        # tail logs
-#   docker compose down           # stop
-#   docker compose down -v        # stop + wipe volumes
+# Quick start (one-time setup):
+#   cp .env.example .env
+#   cp backend/.env.example backend/.env   # then fill in your API keys
+#
+# Run:
+#   docker compose up --build     # first run (builds images)
+#   docker compose up             # subsequent runs
+#   docker compose down           # stop containers
+#   docker compose down -v        # stop + wipe persistent volumes
+#   docker compose logs -f        # stream all logs
+#   docker compose logs -f backend  # stream backend only
 # ─────────────────────────────────────────────────────────────────────────────
 
 services:
 
-  # ── Backend: FastAPI + RAG pipeline ────────────────────────────────────────
+  # ── Backend: FastAPI + RAG pipeline ───────────────────────────────────────
   backend:
     build:
       context: ./backend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev      # dev image: all system libs + dev deps
     container_name: knowledge-backend
     restart: unless-stopped
 
     env_file:
-      - ./backend/.env
+      - ./backend/.env               # real secrets — never committed
+
+    environment:
+      DEV_RELOAD: "true"             # tells entrypoint.sh to start with --reload
 
     ports:
       - "8000:8000"
 
     volumes:
-      # Persistent data
       - uploads:/app/uploads
       - bm25_indexes:/app/bm25_indexes
       - ground_truth:/app/ground_truth
-      # Bind mount — local src/ → container src/
-      # uvicorn --reload watches /app/src and restarts on every file save
-      - ./backend/src:/app/src
-
-    # --reload flag so uvicorn picks up file changes automatically
-
+      - ./backend/src:/app/src       # bind mount → file saves restart uvicorn instantly
 
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:8000/health"]
@@ -48,11 +50,11 @@ services:
       - app-net
 
 
-  # ── Frontend: TanStack Start — Vite dev server with HMR ───────────────────
+  # ── Frontend: TanStack Start + Vite HMR ───────────────────────────────────
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile.dev    # lightweight dev image, runs: npm run dev
+      dockerfile: Dockerfile.dev      # lightweight dev image running npm run dev
     container_name: knowledge-frontend
     restart: unless-stopped
 
@@ -63,11 +65,8 @@ services:
       - "3000:3000"
 
     volumes:
-      # Bind mount — local src/ → container src/
-      # Vite HMR detects changes and hot-reloads the browser instantly
-      - ./frontend/src:/app/src
-      # Protect the container's node_modules — don't let the host folder overwrite it
-      - /app/node_modules
+      - ./frontend/src:/app/src       # bind mount → Vite HMR refreshes browser instantly
+      - /app/node_modules             # keep container's node_modules isolated from host
 
     depends_on:
       backend:
@@ -83,7 +82,7 @@ networks:
     driver: bridge
 
 
-# ── Named volumes (data persists between rebuilds) ─────────────────────────
+# ── Named volumes (data persists between container rebuilds) ───────────────
 volumes:
   uploads:
   bm25_indexes:
