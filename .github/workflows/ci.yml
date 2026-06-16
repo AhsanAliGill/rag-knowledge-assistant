@@ -80,29 +80,19 @@ jobs:
   security:
     name: Security Audit
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-
-    defaults:
-      run:
-        working-directory: ${{ env.WORKING_DIR }}
+    timeout-minutes: 5
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v5
+      # osv-scanner reads uv.lock directly — no Python/venv install needed.
+      # Scans against Google's OSV database (same CVE data as pip-audit).
+      - name: Run OSV Scanner
+        uses: google/osv-scanner-action@v2
         with:
-          version: ${{ env.UV_VERSION }}
-          enable-cache: true
-          cache-dependency-glob: "backend/uv.lock"
-
-      # Export locked prod deps, then audit with system pip (has ensurepip).
-      - name: Audit dependencies
-        run: |
-          uv export --no-dev --no-emit-project --format requirements-txt -o /tmp/requirements-prod.txt
-          pip install pip-audit --quiet
-          pip-audit --requirement /tmp/requirements-prod.txt
+          scan-args: |-
+            --lockfile=backend/uv.lock
 
   # ── Job 3: Tests ─────────────────────────────────────────────────────────────
   test:
