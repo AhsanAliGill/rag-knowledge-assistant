@@ -412,11 +412,11 @@ class TestMetadataTagger:
 
     def test_user_corpus_namespace(self):
         tagged = self.tagger.tag(self._chunks(1), self.doc_id, self.user_id)
-        assert tagged[0].metadata["namespace"] == f"user_{self.user_id}"
+        assert tagged[0].metadata["namespace"] == "shared"
 
     def test_none_user_id_namespace(self):
         tagged = self.tagger.tag(self._chunks(1), self.doc_id, None)
-        assert tagged[0].metadata["namespace"] == f"user_{None}"
+        assert tagged[0].metadata["namespace"] == "shared"
 
     def test_chunk_id_format_from_zero(self):
         tagged = self.tagger.tag(self._chunks(3), self.doc_id, self.user_id, 0)

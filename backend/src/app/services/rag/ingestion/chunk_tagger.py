@@ -11,7 +11,7 @@ class MetadataTagger:
         user_id: uuid.UUID,
         chunk_offset: int = 0,
     ) -> list[Document]:
-        namespace = f"user_{user_id}"
+        namespace = "shared"
         tagged: list[Document] = []
 
         for i, chunk in enumerate(chunks):
