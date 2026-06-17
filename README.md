@@ -29,6 +29,8 @@
 9. [Role-Based Access Control](#-role-based-access-control)
 10. [API Endpoints](#-api-endpoints)
 11. [Security & Cost Control](#-security--cost-control)
+12. [Design Decisions](#-design-decisions)
+13. [Scalability Considerations](#-scalability-considerations)
 
 ---
 
@@ -753,3 +755,45 @@ GET /health  →  {"status": "ok"}
 - **Ingestion failures**: `IngestionJobManager` catches all exceptions, marks job + document as `FAILED`, stores the error message, and leaves no orphaned data.
 - **Stream errors**: Yielded as `{"type": "error", "message": "..."}` — the TCP connection closes cleanly; no `ERR_INCOMPLETE_CHUNKED_ENCODING`.
 - **RAGAS errors**: Returns a zero `MetricSet` — evaluation run never crashes the API.
+
+---
+
+## 🎯 Design Decisions
+
+1. **Hierarchical parent-child chunking** — Child chunks (500 tokens) are embedded and retrieved for precision; parent chunks (2000 tokens) supply surrounding context to the LLM after retrieval. This avoids the classic RAG trade-off between chunk size for accurate retrieval vs. enough context for a coherent answer.
+
+2. **Hybrid retrieval (dense + BM25) over dense-only** — Policy documents contain exact terms, section numbers, and named roles (e.g. "Individual A", specific dollar thresholds) that semantic embeddings sometimes miss. BM25 keyword matching catches exact-term queries; Qdrant dense search catches paraphrased/semantic queries. Reciprocal Rank Fusion (60/40 weighting) combines both rather than picking one.
+
+3. **Cross-encoder reranking (Cohere) as a second pass** — Embedding similarity alone is a weak relevance signal once the candidate pool grows. A cross-encoder reranker scores each candidate chunk against the actual query text, producing a materially more relevant top-N before it reaches the LLM — improving answer quality without changing chunk size or embedding model.
+
+4. **Shared document corpus, not per-user namespaces** — This is a *company* knowledge assistant: all employees should see the same uploaded policies. Documents are tagged into a single `"shared"` namespace rather than siloed per-uploader; RBAC (admin vs. user) controls who can *modify* the corpus, not who can *see* it.
+
+5. **Query rewriting before retrieval** — Multi-turn conversations need pronoun/reference resolution ("what about that policy?" → "what is the procurement policy threshold?") before they can be used as a search query. An LLM rewriter step turns the raw turn into a standalone question, or signals `[NO_RETRIEVAL]` for chitchat/meta-questions so the system doesn't waste a vector search on "thanks!".
+
+6. **Async background ingestion, not synchronous upload** — PDF parsing, chunking, embedding, and indexing can take seconds to minutes for large documents. The upload endpoint returns `202 Accepted` immediately with a `job_id`; ingestion runs as a FastAPI background task, and the frontend polls job progress instead of blocking the HTTP request.
+
+7. **SQLModel over plain SQLAlchemy** — A single class definition serves as both the Pydantic schema (API validation) and the SQLAlchemy ORM model (DB layer), reducing duplication between request/response schemas and table definitions.
+
+8. **JWT (stateless) over server-side sessions** — No session store is needed; any backend replica can validate a token independently, which matters once the API scales beyond one instance.
+
+9. **Provider-per-task instead of one LLM for everything** — Groq handles generation/rewriting/summarisation, OpenRouter handles embeddings, Cohere handles reranking. Each was picked for its free/cheap tier and strength at that specific sub-task, keeping inference cost near-zero during development and evaluation.
+
+---
+
+## 📈 Scalability Considerations
+
+1. **Fully async I/O path** — FastAPI + `asyncpg` + async Qdrant/HTTP clients mean the API can hold many concurrent in-flight requests per worker without thread-per-request overhead.
+
+2. **Stateless API layer** — JWT auth and no in-memory session state mean the backend can be horizontally scaled behind a load balancer with no sticky-session requirement.
+
+3. **External, independently scalable dependencies** — PostgreSQL, Qdrant (Cloud), Groq, OpenRouter, and Cohere all run outside the API process, so the app server stays lightweight and can be scaled independently of the data/inference layer.
+
+4. **Embedding batching with bounded concurrency** — `EmbeddingEngine` batches chunks (size 100) and caps concurrent API calls via a semaphore (5), balancing ingestion throughput against third-party rate limits.
+
+5. **History compression bounds LLM context cost** — Conversations longer than ~3000 tokens are automatically summarised, so LLM cost and latency per turn stay roughly constant regardless of how long a conversation gets.
+
+6. **Known scaling constraint — BM25 index is local disk, not shared.** `BM25Indexer` persists each namespace's keyword index as a `.pkl` file under `BM25_INDEX_DIR` on the container's local filesystem. This works for a single backend replica (or replicas sharing a mounted volume, as in the current Docker Compose setup), but running multiple independently-scaled backend instances without a shared volume would cause BM25 results to diverge between instances. A production scale-out would move this to a shared store (e.g. Redis, S3-backed index, or a dedicated search service like Elasticsearch/OpenSearch).
+
+7. **Ingestion runs as a per-process background task, not a queue.** `BackgroundTasks` runs ingestion in the same process as the API request. This is fine at current scale but doesn't survive a process restart mid-job and doesn't distribute load across workers. A heavier-traffic deployment would move ingestion to a dedicated worker pool (e.g. Celery/RQ workers consuming from Redis or SQS) so the API process never does CPU/IO-heavy parsing.
+
+8. **Upload limits are a cost/abuse guard, not a scaling mechanism.** `MAX_UPLOADS_PER_DAY` and the 50 MB / 500-page caps protect against runaway ingestion cost, but per-user/IP rate limiting on the query endpoints isn't implemented yet — worth adding before opening this up beyond a trusted internal user base.
