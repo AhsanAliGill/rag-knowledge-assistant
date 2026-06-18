@@ -1,5 +1,6 @@
 # Knowledge Assistant
 
+
 ### A production-grade, full-stack RAG application — upload PDFs as an admin, let your team ask natural-language questions against them with real-time streamed answers.
 
 ![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)
